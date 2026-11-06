@@ -180,6 +180,16 @@ test.describe("prefers-reduced-motion: reduce", () => {
   for (const url of ALL_PAGES) {
     test(`${url} : aucune animation en cours`, async ({ page }) => {
       await page.goto(url);
+      // Aucun délai de départ : avec ce réglage, rien n'attend avant de s'afficher.
+      // Ce contrôle ne dépend pas de la vitesse de l'ordinateur (contrairement au
+      // suivant, qui n'avait échoué que sur le serveur plus lent de GitHub Actions).
+      const delayed = await page.evaluate(() =>
+        document
+          .getAnimations()
+          .filter((a) => Number(a.effect?.getComputedTiming().delay ?? 0) > 0)
+          .map((a) => `${(a as CSSAnimation).animationName ?? "?"} (${a.effect!.getComputedTiming().delay} ms)`),
+      );
+      expect(delayed, "animations avec un délai de départ").toEqual([]);
       await page.waitForTimeout(150);
       const running = await page.evaluate(() =>
         document.getAnimations().filter((a) => a.playState === "running").map((a) => (a as CSSAnimation).animationName ?? "?"),
