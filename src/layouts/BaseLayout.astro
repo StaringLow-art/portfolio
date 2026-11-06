@@ -1,0 +1,126 @@
+---
+import { Font } from "astro:assets";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import { site } from "../config/site";
+import "../styles/global.css";
+
+interface Props {
+  /** Titre de la page (sans le nom du site). Omis sur l'accueil. */
+  title?: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+const fullTitle = title ? `${title} — ${site.name}` : `${site.name} — ${site.role}`;
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const ogImage = new URL("/og-image.png", Astro.site).href;
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="color-scheme" content="light dark" />
+    <!-- Thème : appliqué avant l'affichage pour éviter tout flash -->
+    <script is:inline>
+      (function () {
+        var root = document.documentElement;
+        root.classList.add("js");
+        try {
+          var theme = localStorage.getItem("theme");
+          if (theme === "light" || theme === "dark") root.dataset.theme = theme;
+        } catch (e) {}
+        // Révélation des images : cache posé avant le premier affichage,
+        // seulement si l'effet pourra être joué. Si le script de révélation
+        // ne démarre pas en 3 s, le cache est retiré (aucune image bloquée).
+        var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (!reduce && "IntersectionObserver" in window && "animate" in Element.prototype) {
+          root.classList.add("reveal-pending");
+          setTimeout(function () {
+            if (!window.__revealReady) root.classList.remove("reveal-pending");
+          }, 3000);
+        }
+      })();
+    </script>
+    <Font cssVariable="--font-display" preload />
+    <Font cssVariable="--font-body" preload />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="fr_CH" />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={`${site.name} — ${site.role}`} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="skip-link" href="#contenu">Aller au contenu</a>
+    <Header />
+    <main id="contenu" tabindex="-1">
+      <slot />
+    </main>
+    <Footer />
+    <script>
+      // Révélation des images : une seule fois par affichage de page.
+      // - Le cache est posé en CSS avant le premier affichage (reveal-pending).
+      // - Quand l'image arrive à l'écran, elle est marquée data-revealed AVANT
+      //   l'effet : le CSS ne peut plus jamais la recouvrir.
+      // - L'effet (cache qui se retire) est joué par la Web Animations API sur
+      //   une classe temporaire ; à la fin, ou en cas d'erreur, la classe est
+      //   retirée et le cache disparaît définitivement.
+      const root = document.documentElement;
+      const win = window as Window & { __revealReady?: boolean };
+
+      if (root.classList.contains("reveal-pending")) {
+        win.__revealReady = true;
+        const elements = [...document.querySelectorAll<HTMLElement>(".reveal")];
+
+        const play = (el: HTMLElement) => {
+          if (el.dataset.revealed) return; // déjà joué : jamais deux fois
+          el.dataset.revealed = "true";
+          el.classList.add("reveal--playing");
+          const done = () => el.classList.remove("reveal--playing");
+          try {
+            const animation = el.animate([{ transform: "scaleY(1)" }, { transform: "scaleY(0)" }], {
+              duration: 900,
+              easing: "cubic-bezier(0.2, 0.7, 0.1, 1)",
+              fill: "forwards",
+              pseudoElement: "::after",
+            });
+            animation.finished.then(done, done);
+            window.setTimeout(done, 1500); // au plus tard, même si l'animation est suspendue
+          } catch {
+            done();
+          }
+        };
+
+        try {
+          const observer = new IntersectionObserver((entries) => {
+            for (const entry of entries) {
+              if (entry.isIntersecting) {
+                observer.unobserve(entry.target);
+                play(entry.target as HTMLElement);
+              }
+            }
+          });
+          for (const el of elements) observer.observe(el);
+          window.addEventListener("beforeprint", () => elements.forEach(play));
+        } catch {
+          root.classList.remove("reveal-pending");
+        }
+      }
+    </script>
+  </body>
+</html>

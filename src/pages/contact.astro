@@ -1,0 +1,221 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { site } from "../config/site";
+
+/** Liens affichés seulement s'ils sont renseignés dans site.ts. */
+type Lien = { label: string; href: string | null };
+const tousLesLiens: Lien[] = [
+  { label: "GitHub", href: site.links.github },
+  { label: "LinkedIn", href: site.links.linkedin },
+];
+const liens = tousLesLiens.filter((lien): lien is { label: string; href: string } => typeof lien.href === "string");
+
+/* Coupure de ligne seulement après « @ », jamais au trait d'union du domaine */
+const [emailLocal, emailDomain] = site.email.split("@");
+
+const PRIVACY_URL =
+  "https://docs.github.com/fr/pages/getting-started-with-github-pages/what-is-github-pages#data-collection";
+---
+
+<BaseLayout title="Contact" description={`Contacter ${site.name}, ${site.role}. Adresse e-mail et CV.`}>
+  <div class="wrap page contact">
+    <h1 class="contact__title">Contact</h1>
+
+    <section class="contact__main on-slab grain-slab" aria-labelledby="titre-email">
+      <h2 class="label" id="titre-email">Adresse e-mail</h2>
+      <p class="contact__email" id="adresse-email">{emailLocal}@<wbr /><span class="contact__domain">{emailDomain}</span></p>
+      <div class="contact__actions">
+        <a class="btn btn--inverse" href={`mailto:${site.email}`}>Envoyer un e-mail</a>
+        <button type="button" class="btn btn--ghost" data-copy-email hidden>Copier l'adresse</button>
+      </div>
+      <p class="contact__status" role="status" aria-live="polite" data-copy-status></p>
+    </section>
+
+    <div class="contact__side">
+      <section class="contact__block" aria-labelledby="titre-cv">
+        <h2 class="contact__block-title" id="titre-cv">CV</h2>
+        <p>
+          <a class="btn" href={site.cvPath} download>
+            Télécharger le CV <span class="contact__format">PDF</span>
+          </a>
+        </p>
+      </section>
+
+      <section class="contact__block" aria-labelledby="titre-dispo">
+        <h2 class="contact__block-title" id="titre-dispo">Disponibilité</h2>
+        <p class="contact__dispo">{site.availability}</p>
+      </section>
+
+      {
+        liens.length > 0 && (
+          <section class="contact__block" aria-labelledby="titre-liens">
+            <h2 class="contact__block-title" id="titre-liens">
+              Liens
+            </h2>
+            <ul class="contact__links" role="list">
+              {liens.map((lien) => (
+                <li>
+                  <a class="link-arrow" href={lien.href} rel="me noopener">
+                    {lien.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      }
+    </div>
+
+    <p class="contact__privacy">
+      Ce site n'utilise ni cookies ni outil de statistiques. Le choix du thème est conservé uniquement dans votre
+      navigateur. Il est hébergé par GitHub Pages, qui peut enregistrer l'adresse IP des visiteurs pour des raisons de
+      sécurité. <a href={PRIVACY_URL}>En savoir plus</a>
+    </p>
+  </div>
+</BaseLayout>
+
+<script>
+  // Bouton « Copier l'adresse » : visible uniquement avec JavaScript.
+  const button = document.querySelector<HTMLButtonElement>("[data-copy-email]");
+  const status = document.querySelector<HTMLElement>("[data-copy-status]");
+  const address = document.getElementById("adresse-email");
+
+  if (button && status && address) {
+    button.hidden = false;
+    button.addEventListener("click", async () => {
+      const email = address.textContent?.trim() ?? "";
+      status.textContent = "";
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error("Clipboard API indisponible");
+        await navigator.clipboard.writeText(email);
+        status.textContent = "Adresse copiée dans le presse-papiers.";
+      } catch {
+        // Échec : on sélectionne l'adresse pour faciliter la copie manuelle.
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(address);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        status.textContent =
+          "La copie automatique n'a pas fonctionné. L'adresse est sélectionnée : vous pouvez la copier manuellement.";
+      }
+    });
+  }
+</script>
+
+<style>
+  .contact {
+    display: grid;
+    gap: clamp(2rem, 5vw, 3.5rem);
+  }
+
+  .contact__title {
+    font-size: clamp(3.5rem, 1rem + 13vw, 14rem);
+    line-height: 0.8;
+  }
+
+  /* Bloc principal : aplat bordeaux, à fond perdu à droite */
+  .contact__main {
+    margin-right: calc(-1 * var(--gutter));
+    padding: clamp(1.5rem, 4vw, 3rem) var(--gutter) clamp(1.5rem, 4vw, 3rem) clamp(1.25rem, 4vw, 3rem);
+  }
+
+  .contact__email {
+    margin: 0.75rem 0 1.5rem;
+    font-size: clamp(1.25rem, 0.8rem + 2.6vw, 3rem);
+    font-weight: 600;
+    line-height: 1.1;
+    user-select: all;
+  }
+
+  .contact__domain {
+    white-space: nowrap;
+  }
+
+  .contact__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .contact__status {
+    min-height: 1.6em;
+    margin: 1rem 0 0;
+    font-weight: 600;
+  }
+
+  .contact__side {
+    display: grid;
+    gap: 2rem;
+  }
+
+  .contact__block {
+    padding-top: 1rem;
+    border-top: var(--rule);
+  }
+
+  .contact__block-title {
+    margin-bottom: 1rem;
+    font-size: clamp(1.8rem, 1.3rem + 2vw, 2.75rem);
+  }
+
+  .contact__block p {
+    margin: 0;
+  }
+
+  .contact__dispo {
+    max-width: 46ch;
+  }
+
+  .contact__format {
+    font-size: 0.75em;
+    letter-spacing: 0.08em;
+  }
+
+  .contact__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 2rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* Mention de confidentialité : discrète */
+  .contact__privacy {
+    max-width: 70ch;
+    margin: 0;
+    padding-top: 1rem;
+    border-top: 1px solid var(--c-fg);
+    font-size: 0.875rem;
+  }
+
+  .contact__privacy a {
+    color: var(--c-accent);
+  }
+
+  @media (min-width: 64rem) {
+    .contact {
+      grid-template-columns: 7fr 5fr;
+      column-gap: clamp(2rem, 5vw, 5rem);
+    }
+
+    .contact__title,
+    .contact__privacy {
+      grid-column: 1 / -1;
+    }
+
+    .contact__main {
+      grid-column: 2;
+      grid-row: 2;
+      align-self: start;
+    }
+
+    .contact__side {
+      grid-column: 1;
+      grid-row: 2;
+      align-self: start;
+      max-width: 34rem;
+    }
+  }
+</style>

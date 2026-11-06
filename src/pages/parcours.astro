@@ -1,0 +1,263 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { site } from "../config/site";
+import { parcours } from "../data/parcours";
+
+const TYPE = { formation: "Formation", experience: "Expérience" } as const;
+
+/** Période : tiret demi-cadratin « – », lié au mot précédent par une espace
+ *  insécable (une ligne ne commence jamais par un tiret). */
+const periode = (texte: string) => texte.replace(/\s*[-–—]\s*/g, " – ");
+---
+
+<BaseLayout title="Parcours" description={`Parcours et compétences de ${site.name}, ${site.role}.`}>
+  <div class="wrap page">
+    <header class="section-head">
+      <h1 class="section-title">Parcours</h1>
+      <p class="parcours__cv">
+        <a class="btn" href={site.cvPath} download>
+          Télécharger le CV <span class="parcours__format">PDF</span>
+        </a>
+      </p>
+    </header>
+
+    <div class="parcours__intro">
+      <p class="parcours__lead">{parcours.introduction}</p>
+      <section class="parcours__recherche" aria-labelledby="titre-recherche">
+        <h2 class="label" id="titre-recherche">Recherche</h2>
+        <p>{parcours.recherche}</p>
+      </section>
+    </div>
+
+    <ol class="etapes" role="list">
+      {
+        parcours.etapes.map((etape) => (
+          <li class="etape">
+            <div class="etape__meta">
+              <p class="etape__periode">{periode(etape.periode)}</p>
+              <p class="etape__type label">{TYPE[etape.type]}</p>
+            </div>
+            <div class="etape__texte">
+              <h2 class="etape__titre">{etape.titre}</h2>
+              <p class="etape__org">{etape.organisation}</p>
+              {etape.description && <p class="etape__desc">{etape.description}</p>}
+              {etape.taches && (
+                <ul class="etape__taches">
+                  {etape.taches.map((tache) => (
+                    <li>{tache}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+
+    <section class="competences" aria-labelledby="titre-competences">
+      <h2 class="competences__title" id="titre-competences">Compétences</h2>
+      <div class="competences__groupes">
+        {
+          parcours.competences.map((groupe) => (
+            <section class="groupe">
+              <h3 class="groupe__titre label">{groupe.groupe}</h3>
+              <ul class="groupe__liste" role="list">
+                {groupe.elements.map((el) => (
+                  <li>{el}</li>
+                ))}
+              </ul>
+            </section>
+          ))
+        }
+      </div>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .parcours__cv {
+    margin: 0;
+    flex-shrink: 0;
+  }
+
+  .parcours__format {
+    font-size: 0.75em;
+    letter-spacing: 0.08em;
+  }
+
+  @media (max-width: 40rem) {
+    .section-head {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+
+  /* ============ Introduction et recherche ============ */
+  .parcours__intro {
+    display: grid;
+    gap: 1.5rem 3rem;
+    margin-bottom: clamp(2.5rem, 6vw, 4.5rem);
+  }
+
+  .parcours__lead {
+    max-width: 58ch;
+    margin: 0;
+    font-size: clamp(1.15rem, 1rem + 0.7vw, 1.5rem);
+    font-weight: 500;
+    line-height: 1.45;
+  }
+
+  .parcours__recherche {
+    align-self: start;
+    padding-top: 0.75rem;
+    border-top: var(--rule);
+  }
+
+  .parcours__recherche h2 {
+    margin-bottom: 0.6rem;
+  }
+
+  .parcours__recherche p {
+    max-width: 46ch;
+    margin: 0;
+    font-weight: 600;
+    line-height: 1.45;
+  }
+
+  @media (min-width: 64rem) {
+    .parcours__intro {
+      grid-template-columns: 8fr 4fr;
+    }
+  }
+
+  /* ============ Étapes : liste de titres, période en marge ============ */
+  .etapes {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .etape {
+    display: grid;
+    gap: 0.9rem 2rem;
+    padding-block: clamp(1.25rem, 3vw, 2rem);
+    border-bottom: 1px solid var(--c-fg);
+  }
+
+  /* Interligne 1,46 em + 3 px : dans Anton, les capitales accentuées (É, À, Ô) montent à
+     1,11 em et la cédille (Ç) descend à 0,31 em. Il faut donc au moins 1,46 em (È compris)
+     pour qu'un Ç ne touche jamais l'accent placé sous lui. */
+  .etape__periode {
+    margin: 0;
+    font-family: var(--font-display-stack);
+    font-size: clamp(1.6rem, 1rem + 2vw, 2.75rem);
+    line-height: calc(1.46em + 3px);
+    color: var(--c-mark);
+    text-wrap: balance;
+  }
+
+  .etape__type {
+    margin: 0.5rem 0 0;
+  }
+
+  .etape__titre {
+    font-size: clamp(1.6rem, 1.1rem + 1.8vw, 2.6rem);
+    line-height: calc(1.46em + 3px);
+    text-wrap: balance;
+  }
+
+  .etape__org {
+    margin: 0.5rem 0 0;
+    font-weight: 600;
+  }
+
+  .etape__desc {
+    max-width: 60ch;
+    margin: 0.6rem 0 0;
+  }
+
+  .etape__taches {
+    display: grid;
+    gap: 0.4rem;
+    max-width: 64ch;
+    margin: 1rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .etape__taches li {
+    display: grid;
+    grid-template-columns: 1.4rem 1fr;
+    line-height: 1.45;
+  }
+
+  /* Tiret typographique en guise de puce */
+  .etape__taches li::before {
+    content: "—";
+    color: var(--c-mark);
+  }
+
+  /* Ordinateur : la période s'aligne sur la première ligne du titre */
+  @media (min-width: 48rem) {
+    .etape {
+      grid-template-columns: minmax(10rem, 3fr) 9fr;
+      align-items: first baseline;
+    }
+  }
+
+  /* ============ Compétences : groupes décalés ============ */
+  .competences {
+    margin-top: clamp(4rem, 9vw, 7rem);
+  }
+
+  .competences__title {
+    margin-bottom: clamp(1.5rem, 4vw, 3rem);
+    font-size: clamp(2.6rem, 1.5rem + 5vw, 6rem);
+    line-height: 0.85;
+  }
+
+  .competences__groupes {
+    display: grid;
+    gap: clamp(1.5rem, 4vw, 2.5rem);
+    border-top: var(--rule);
+    padding-top: 1.25rem;
+  }
+
+  .groupe__titre {
+    margin-bottom: 0.85rem;
+  }
+
+  /* Compétences en colonnes, sans séparateur (aucun « / » isolé en fin de ligne) */
+  .groupe__liste {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+    gap: 0.3rem 1.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: clamp(1.1rem, 1rem + 0.4vw, 1.3rem);
+    font-weight: 600;
+  }
+
+  .groupe__liste li::before {
+    content: "";
+    display: inline-block;
+    width: 0.6rem;
+    height: 2px;
+    margin-right: 0.55rem;
+    vertical-align: middle;
+    background: var(--c-mark);
+  }
+
+  @media (min-width: 64rem) {
+    .competences {
+      display: grid;
+      grid-template-columns: 4fr 8fr;
+      gap: 2rem;
+    }
+
+    .competences__title {
+      margin: 0;
+    }
+  }
+</style>

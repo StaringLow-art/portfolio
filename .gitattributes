@@ -1,0 +1,21 @@
+# Fins de ligne normalisées (LF) pour Windows et Linux
+* text=auto eol=lf
+
+# Fichiers binaires : jamais convertis par Git. Le CV garde ainsi exactement
+# la même empreinte SHA-256 sur Windows, sur Linux et dans GitHub Actions
+# (check:privacy en dépend).
+*.pdf   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.webp  binary
+*.avif  binary
+*.gif   binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.mp4   binary
+*.webm  binary
+*.zip   binary

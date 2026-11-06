@@ -1,0 +1,114 @@
+---
+import Logo from "./Logo.astro";
+import ThemeToggle from "./ThemeToggle.astro";
+
+const path = Astro.url.pathname;
+const items = [
+  { href: "/", label: "Accueil" },
+  { href: "/projets/", label: "Projets" },
+  { href: "/parcours/", label: "Parcours" },
+  { href: "/contact/", label: "Contact" },
+];
+
+/** "page" sur la page exacte, "true" dans une sous-page (ex. un projet). */
+function ariaCurrent(href: string): "page" | "true" | undefined {
+  if (path === href) return "page";
+  if (href !== "/" && path.startsWith(href)) return "true";
+  return undefined;
+}
+---
+
+<header class="site-header">
+  <div class="wrap site-header__inner">
+    <a class="site-header__home" href="/" aria-label="Ryan Cardamone, accueil">
+      <Logo />
+    </a>
+    <nav class="site-header__nav" aria-label="Navigation principale">
+      <ul class="site-nav">
+        {
+          items.map((item) => (
+            <li>
+              <a href={item.href} aria-current={ariaCurrent(item.href)}>
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+    <ThemeToggle />
+  </div>
+</header>
+
+<style>
+  .site-header {
+    border-bottom: var(--rule);
+  }
+
+  .site-header__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 1.5rem;
+    padding-block: 0.75rem;
+  }
+
+  .site-header__home {
+    text-decoration: none;
+    margin-right: auto;
+  }
+
+  .site-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 1.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .site-nav a {
+    display: inline-block;
+    padding-block: 0.6rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-decoration: none;
+    background: linear-gradient(currentColor, currentColor) 0 calc(100% - 0.35rem) / 0 2px no-repeat;
+    transition: background-size 0.25s var(--ease-out);
+  }
+
+  .site-nav a:hover {
+    background-size: 100% 2px;
+  }
+
+  /* Page active : soulignement plein bordeaux */
+  .site-nav a[aria-current] {
+    color: var(--c-accent);
+    background-size: 100% 2px;
+  }
+
+  /* Téléphone : logo + thème sur la 1re ligne, navigation complète sur la 2e */
+  @media (max-width: 40rem) {
+    .site-header__inner {
+      gap: 0 1rem;
+      padding-block: 0.5rem 0;
+    }
+
+    .site-header__nav {
+      order: 3;
+      width: 100%;
+    }
+
+    .site-nav {
+      justify-content: space-between;
+      gap: 0 0.5rem;
+    }
+
+    .site-nav a {
+      font-size: 0.8125rem;
+      letter-spacing: 0.02em;
+    }
+  }
+</style>

@@ -1,0 +1,111 @@
+---
+/**
+ * Bouton de thème : son libellé propose toujours le thème opposé
+ * (« Thème sombre » en clair, « Thème clair » en sombre).
+ * Caché sans JavaScript (attribut hidden) : prefers-color-scheme s'applique alors.
+ */
+---
+
+<button type="button" class="theme-toggle" data-theme-toggle hidden>
+  <span class="theme-toggle__mark" aria-hidden="true"></span>
+  <span class="theme-toggle__label" data-theme-label>Thème sombre</span>
+</button>
+
+<script>
+  const root = document.documentElement;
+  const media = window.matchMedia("(prefers-color-scheme: dark)");
+  const button = document.querySelector<HTMLButtonElement>("[data-theme-toggle]");
+  const label = button?.querySelector<HTMLElement>("[data-theme-label]");
+
+  const current = (): "light" | "dark" => {
+    const chosen = root.dataset.theme;
+    if (chosen === "light" || chosen === "dark") return chosen;
+    return media.matches ? "dark" : "light";
+  };
+
+  const render = () => {
+    if (!button || !label) return;
+    const theme = current();
+    label.textContent = theme === "dark" ? "Thème clair" : "Thème sombre";
+    button.dataset.current = theme;
+  };
+
+  if (button) {
+    render();
+    button.hidden = false;
+    button.addEventListener("click", () => {
+      const next = current() === "dark" ? "light" : "dark";
+      root.dataset.theme = next;
+      try {
+        localStorage.setItem("theme", next);
+      } catch {
+        // Stockage indisponible : le choix vaut pour cette page seulement.
+      }
+      render();
+    });
+    media.addEventListener("change", render);
+  }
+</script>
+
+<style>
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+    min-height: 2.75rem;
+    padding: 0.4em 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .theme-toggle[hidden] {
+    display: none;
+  }
+
+  /* Pastille mi-pleine : tourne selon le thème actif */
+  .theme-toggle__mark {
+    width: 1em;
+    height: 1em;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    background: linear-gradient(90deg, currentColor 50%, transparent 50%);
+    transition: transform 0.3s var(--ease-out);
+  }
+
+  .theme-toggle[data-current="dark"] .theme-toggle__mark {
+    transform: rotate(180deg);
+  }
+
+  .theme-toggle:hover {
+    color: var(--c-accent);
+  }
+
+  /* Téléphone : pastille seule ; le nom accessible reste le libellé */
+  @media (max-width: 40rem) {
+    .theme-toggle {
+      min-width: 2.75rem;
+      justify-content: center;
+    }
+
+    .theme-toggle__mark {
+      width: 1.25em;
+      height: 1.25em;
+    }
+
+    .theme-toggle__label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+  }
+</style>

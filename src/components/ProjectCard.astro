@@ -1,0 +1,127 @@
+---
+import { Image } from "astro:assets";
+import { numero, type Projet } from "../lib/projets";
+
+interface Props {
+  projet: Projet;
+  index: number;
+  total: number;
+  /** Niveau du titre selon la page (h2 ou h3). */
+  headingLevel?: 2 | 3;
+}
+
+const { projet, index, total, headingLevel = 3 } = Astro.props;
+const Heading = `h${headingLevel}` as "h2" | "h3";
+const href = `/projets/${projet.id}/`;
+---
+
+<article class="card">
+  <div class="card__frame crop-marks">
+    <div
+      class="card__media reveal"
+      style={`--card-focus: ${projet.data.coverPosition};${
+        // Capture d'écran : vignette aux proportions réelles, rien n'est rogné
+        projet.data.coverZoom ? ` --card-ratio: ${projet.data.cover.width} / ${projet.data.cover.height};` : ""
+      }`}
+    >
+      <Image
+        src={projet.data.cover}
+        alt={projet.data.coverAlt}
+        widths={[480, 720, 960, 1280, 1600]}
+        sizes="(min-width: 64rem) 55vw, 100vw"
+        loading="lazy"
+        format="webp"
+        quality={88}
+      />
+    </div>
+  </div>
+  <div class="card__caption">
+    <p class="card__num">{numero(index, total)}</p>
+    <div class="card__text">
+      <Heading class="card__title">
+        <a href={href}>{projet.data.title}</a>
+      </Heading>
+      <p class="card__summary">{projet.data.summary}</p>
+    </div>
+  </div>
+</article>
+
+<style>
+  .card {
+    position: relative;
+    display: grid;
+    align-content: start;
+    align-self: start;
+    gap: 1.1rem;
+  }
+
+  /* Cadrage : le ratio est fixé par la mosaïque (--card-ratio) */
+  .card__media {
+    aspect-ratio: var(--card-ratio, 4 / 5);
+    background: var(--c-fg);
+  }
+
+  .card__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: var(--card-focus, 50% 50%);
+    filter: grayscale(1) contrast(1.05);
+    transition: transform 0.6s var(--ease-out);
+  }
+
+  .card:hover .card__media img {
+    transform: scale(1.03);
+  }
+
+  /* Légende façon liste de titres d'album : numéro de piste au-dessus du titre,
+     qui garde ainsi toute la largeur (mots longs comme « d'infrastructure »). */
+  .card__caption {
+    display: grid;
+    gap: 0.35rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--c-fg);
+    min-width: 0;
+  }
+
+  /* Numéro de piste unique, façon pochette : « N°01/02 » */
+  .card__num {
+    margin: 0;
+    font-family: var(--font-display-stack);
+    font-size: clamp(1.5rem, 1rem + 1.8vw, 2.5rem);
+    line-height: 0.95;
+    letter-spacing: 0.01em;
+    color: var(--c-mark);
+    white-space: nowrap;
+  }
+
+  .card__title {
+    font-size: clamp(1.75rem, 1.2rem + 2.2vw, 3.25rem);
+    line-height: var(--lh-title);
+    margin-bottom: 0.5rem;
+  }
+
+  .card__title a {
+    text-decoration: none;
+  }
+
+  /* Toute la carte est cliquable, sans dupliquer le lien */
+  .card__title a::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+
+  /* Grand titre : survol par soulignement (couleur --c-mark, pas d'accent) */
+  .card:hover .card__title a {
+    color: var(--c-mark);
+    text-decoration: underline;
+    text-decoration-thickness: 0.06em;
+    text-underline-offset: 0.12em;
+  }
+
+  .card__summary {
+    max-width: 52ch;
+    margin: 0;
+  }
+</style>

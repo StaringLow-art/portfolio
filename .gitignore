@@ -1,0 +1,44 @@
+# Dépendances et fichiers générés
+node_modules/
+dist/
+.astro/
+
+# Rapports de tests et de Lighthouse
+test-results/
+playwright-report/
+blob-report/
+lighthouse/
+*.lighthouse.html
+*.lighthouse.json
+
+# Originaux (photos, CV non nettoyés, captures) : ne jamais les versionner
+originaux/
+portfolio-sources/
+
+# Notes de travail locales (liste du contenu à fournir)
+CONTENU-A-FOURNIR.md
+
+# Variables d'environnement, secrets et clés
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.local
+*.local.*
+
+# Journaux
+*.log
+npm-debug.log*
+
+# Réglages locaux de Claude Code (propres à cet ordinateur)
+.claude/
+
+# Système et éditeur
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json

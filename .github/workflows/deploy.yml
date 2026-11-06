@@ -1,0 +1,70 @@
+# Vérifie puis publie le site sur GitHub Pages à chaque push sur main.
+# Le déploiement n'a lieu que si toutes les vérifications réussissent.
+name: Vérifier et publier
+
+on:
+  push:
+    branches: [main]
+  # Permet de relancer le workflow à la main depuis l'onglet Actions
+  workflow_dispatch:
+
+# Permissions minimales par défaut : lecture du dépôt uniquement
+permissions:
+  contents: read
+
+# Un seul déploiement à la fois ; celui en cours n'est pas interrompu
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  # Pas de télémétrie Astro dans GitHub Actions
+  ASTRO_TELEMETRY_DISABLED: "1"
+
+jobs:
+  verifier:
+    name: Vérifier et construire
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v7
+
+      - name: Installer Node.js (version de .nvmrc)
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Installer les dépendances (package-lock.json)
+        run: npm ci
+
+      - name: Installer Chromium et Firefox pour les tests
+        run: npx playwright install --with-deps chromium firefox
+
+      - name: Contrôles, build, tests et vie privée
+        run: npm run verify
+
+      - name: Contrôle de mise en ligne
+        run: npm run check:launch
+
+      - name: Préparer le site pour GitHub Pages
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist/
+
+  publier:
+    name: Publier sur GitHub Pages
+    needs: verifier
+    # Uniquement depuis main, même en cas de lancement manuel
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploiement.outputs.page_url }}
+    steps:
+      - name: Déployer
+        id: deploiement
+        uses: actions/deploy-pages@v5

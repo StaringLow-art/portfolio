@@ -1,0 +1,76 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { site } from "../config/site";
+---
+
+<BaseLayout title="Page introuvable" description="Cette page n'existe pas ou a été déplacée.">
+  <meta slot="head" name="robots" content="noindex" />
+  <div class="wrap page erreur">
+    <p class="erreur__code on-slab grain-slab" aria-hidden="true">404</p>
+    <div class="erreur__texte">
+      <h1 class="erreur__title">Page introuvable</h1>
+      <p class="erreur__lead">Cette page n'existe pas ou a été déplacée.</p>
+      <div class="erreur__actions">
+        <a class="btn" href="/">Retour à l'accueil</a>
+        <a class="btn btn--ghost" href="/projets/">Projets</a>
+      </div>
+      <ul class="erreur__links" role="list">
+        <li><a class="link-arrow" href="/parcours/">Parcours</a></li>
+        <li><a class="link-arrow" href="/contact/">Contact</a></li>
+        <li><a class="link-arrow" href={site.cvPath} download>CV (PDF)</a></li>
+      </ul>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .erreur {
+    display: grid;
+    gap: clamp(1.5rem, 4vw, 3rem);
+  }
+
+  /* Grand « 404 » blanc cassé sur aplat bordeaux, façon pochette (identique dans les deux thèmes) */
+  .erreur__code {
+    justify-self: start;
+    margin: 0;
+    padding: 0.06em 0.1em 0;
+    font-family: var(--font-display-stack);
+    font-size: clamp(8rem, 2rem + 30vw, 26rem);
+    line-height: 0.92;
+  }
+
+  .erreur__title {
+    font-size: clamp(2.5rem, 1.5rem + 5vw, 6rem);
+    line-height: var(--lh-title);
+  }
+
+  .erreur__lead {
+    margin: 1rem 0 1.75rem;
+    font-size: clamp(1.1rem, 1rem + 0.6vw, 1.4rem);
+  }
+
+  .erreur__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .erreur__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 2rem;
+    margin: 2rem 0 0;
+    padding: 1rem 0 0;
+    list-style: none;
+    border-top: 1px solid var(--c-fg);
+  }
+
+  /* Côte à côte seulement s'il y a la place pour « INTROUVABLE » (testé à 1024 px) */
+  @media (min-width: 80rem) {
+    .erreur {
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: end;
+      column-gap: clamp(2rem, 5vw, 5rem);
+    }
+  }
+</style>

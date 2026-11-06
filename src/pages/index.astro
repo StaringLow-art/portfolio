@@ -1,0 +1,98 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Hero from "../components/Hero.astro";
+import ProjectMosaic from "../components/ProjectMosaic.astro";
+import { site } from "../config/site";
+import { getProjetsPublies } from "../lib/projets";
+
+const projets = await getProjetsPublies();
+const total = String(projets.length).padStart(2, "0");
+
+/** Données structurées Person minimales : ni adresse, ni téléphone. */
+const liens: Array<string | null> = [site.links.github, site.links.linkedin];
+const sameAs = liens.filter((l): l is string => typeof l === "string");
+const person = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: site.name,
+  jobTitle: site.role,
+  url: new URL("/", Astro.site).href,
+  ...(sameAs.length > 0 ? { sameAs } : {}),
+};
+---
+
+<BaseLayout description={`${site.name}, ${site.role}, région de ${site.location}. CV, projets et contact.`}>
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(person)} />
+  <Hero />
+
+  <section class="home-projects" aria-labelledby="titre-projets">
+    <div class="wrap">
+      <header class="section-head">
+        <h2 class="section-title" id="titre-projets">Projets</h2>
+        <p class="section-count">
+          <span class="section-count__n">{total}</span>
+          <span class="label">{projets.length > 1 ? "projets publiés" : "projet publié"}</span>
+        </p>
+      </header>
+      <ProjectMosaic projets={projets} headingLevel={3} />
+      <p class="home-projects__all">
+        <a class="link-arrow" href="/projets/">Tous les projets</a>
+      </p>
+    </div>
+  </section>
+
+  <section class="home-contact on-slab grain-slab" aria-labelledby="titre-contact">
+    <div class="wrap home-contact__inner">
+      <h2 class="home-contact__title" id="titre-contact">Contact</h2>
+      <div class="home-contact__body">
+        <p class="home-contact__email">{site.email}</p>
+        <div class="home-contact__actions">
+          <a class="btn btn--inverse" href={`mailto:${site.email}`}>Envoyer un e-mail</a>
+          <a class="btn btn--ghost" href="/contact/">Page contact</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .home-projects {
+    padding-block: clamp(3rem, 8vw, 7rem);
+    border-top: var(--rule);
+  }
+
+  .home-projects__all {
+    margin: clamp(3rem, 7vw, 6rem) 0 0;
+  }
+
+  /* Bloc contact : grand aplat bordeaux */
+  .home-contact__inner {
+    display: grid;
+    gap: 1.5rem 3rem;
+    padding-block: clamp(3rem, 8vw, 6rem);
+  }
+
+  .home-contact__title {
+    font-size: clamp(4rem, 2rem + 12vw, 13rem);
+    line-height: 0.82;
+  }
+
+  .home-contact__email {
+    font-size: clamp(1.15rem, 1rem + 1vw, 1.6rem);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .home-contact__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  @media (min-width: 64rem) {
+    .home-contact__inner {
+      grid-template-columns: auto 1fr;
+      align-items: end;
+    }
+  }
+</style>

@@ -1,0 +1,483 @@
+/* ==========================================================
+   Couleurs : noir, blanc cassé, bordeaux. Aucune autre teinte.
+   ========================================================== */
+:root {
+  --c-bg: #f2f0eb;
+  --c-fg: #111110;
+  /* Bordeaux pour les petits éléments : liens, navigation active, focus */
+  --c-accent: #6b0f1a;
+  /* Grands éléments graphiques (numéros, compteurs, périodes, filets) :
+     bordeaux en clair, blanc cassé en sombre */
+  --c-mark: #6b0f1a;
+  /* Aplats bordeaux (identiques dans les deux thèmes) */
+  --c-slab: #6b0f1a;
+  --c-on-slab: #f2f0eb;
+  /* Bouton principal : aplat bordeaux en clair, blanc cassé en sombre */
+  --btn-bg: #6b0f1a;
+  --btn-fg: #f2f0eb;
+  color-scheme: light;
+
+  /* Les polices de secours sont déclarées dans astro.config.mjs */
+  --font-display-stack: var(--font-display);
+  --font-body-stack: var(--font-body);
+
+  /* Grain (bruit SVG en niveaux de gris, intégré : aucune requête externe) */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .03 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --grain-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .018 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --page-grain: var(--grain);
+
+  /* Interligne des titres d'affiche sur plusieurs lignes (Anton) :
+     capitale accentuée = 1,11 em au-dessus de la ligne de base,
+     queue du Q = 0,10 em en dessous → 1,22 em + 2 px, les lettres de deux
+     lignes ne se touchent jamais. */
+  --lh-title: calc(1.22em + 2px);
+
+  --gutter: clamp(1rem, 4vw, 3rem);
+  --max: 90rem;
+  --rule: 2px solid var(--c-fg);
+  --ease-out: cubic-bezier(0.2, 0.7, 0.1, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --c-bg: #111110;
+    --c-fg: #f2f0eb;
+    --c-accent: #d06f7c;
+    --c-mark: #f2f0eb;
+    --btn-bg: #f2f0eb;
+    --btn-fg: #6b0f1a;
+    --page-grain: var(--grain-light);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --c-bg: #111110;
+  --c-fg: #f2f0eb;
+  --c-accent: #d06f7c;
+  --c-mark: #f2f0eb;
+  --btn-bg: #f2f0eb;
+  --btn-fg: #6b0f1a;
+  --page-grain: var(--grain-light);
+  color-scheme: dark;
+}
+
+/* ==========================================================
+   Base
+   ========================================================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--c-bg);
+  background-image: var(--page-grain);
+  color: var(--c-fg);
+  font-family: var(--font-body-stack);
+  font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  line-height: 1.6;
+  overflow-wrap: break-word;
+}
+
+main {
+  flex: 1;
+}
+
+/* L'attribut hidden doit toujours cacher, même sur un élément stylé (ex. .btn) */
+[hidden] {
+  display: none !important;
+}
+
+main:focus {
+  outline: none;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display-stack);
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  margin: 0;
+  /* Lignes équilibrées : jamais un mot isolé en dernière ligne */
+  text-wrap: balance;
+}
+
+p {
+  margin: 0 0 1em;
+}
+
+a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+a:hover {
+  color: var(--c-accent);
+}
+
+/* Focus toujours visible, contrasté dans les deux thèmes */
+:focus-visible {
+  outline: 3px solid var(--c-accent);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: var(--c-slab);
+  color: var(--c-on-slab);
+}
+
+/* ==========================================================
+   Utilitaires
+   ========================================================== */
+/* Marges de page communes à toutes les sections (menu, héros, sections,
+   pied de page) : pleine largeur moins la marge latérale --gutter.
+   Les textes gardent leur propre largeur de lecture (en ch). */
+.wrap {
+  width: 100%;
+  padding-inline: var(--gutter);
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  left: var(--gutter);
+  top: 0.5rem;
+  z-index: 100;
+  padding: 0.6rem 1rem;
+  background: var(--c-slab);
+  color: var(--c-on-slab);
+  font-weight: 600;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+/* Bouton principal : aplat (bordeaux en clair, blanc cassé en sombre) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+  padding: 0.85em 1.4em;
+  border: 2px solid var(--btn-bg);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  font: inherit;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.2s var(--ease-out);
+}
+
+.btn:hover {
+  color: var(--btn-fg);
+  transform: translateY(-2px);
+}
+
+.btn--ghost {
+  background: transparent;
+  border-color: var(--c-fg);
+  color: var(--c-fg);
+}
+
+.btn--ghost:hover {
+  color: var(--c-fg);
+}
+
+/* Lien éditorial avec flèche typographique */
+.link-arrow {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-bottom: 2px solid currentColor;
+  padding-bottom: 0.15em;
+}
+
+.link-arrow::after {
+  content: "→";
+  display: inline-block;
+  margin-left: 0.4em;
+  transition: transform 0.25s var(--ease-out);
+}
+
+.link-arrow:hover::after {
+  transform: translateX(0.25em);
+}
+
+/* ==========================================================
+   Aplats bordeaux (#6B0F1A dans les deux thèmes, texte #F2F0EB)
+   ========================================================== */
+.grain-slab {
+  background-color: var(--c-slab);
+  background-image: var(--grain-light), var(--grain);
+}
+
+.on-slab {
+  color: var(--c-on-slab);
+}
+
+.on-slab a:hover,
+.on-slab .btn--ghost,
+.on-slab .btn--ghost:hover {
+  color: var(--c-on-slab);
+}
+
+.on-slab .btn--ghost {
+  border-color: var(--c-on-slab);
+}
+
+.on-slab :focus-visible {
+  outline-color: var(--c-on-slab);
+}
+
+.btn--inverse {
+  background: var(--c-on-slab);
+  border-color: var(--c-on-slab);
+  color: var(--c-slab);
+}
+
+.btn--inverse:hover {
+  color: var(--c-slab);
+}
+
+/* ==========================================================
+   Révélation des images (état caché posé par JavaScript seulement)
+   ========================================================== */
+.reveal {
+  position: relative;
+  overflow: hidden;
+}
+
+/*
+ * Cache bordeaux posé AVANT le premier affichage (classe reveal-pending,
+ * ajoutée dans <head> uniquement si JavaScript et le mouvement sont actifs).
+ * L'effet est joué une seule fois par JavaScript (Web Animations API) ;
+ * une image marquée data-revealed ne peut plus jamais être recouverte.
+ * Aucune animation ni transition CSS concurrente sur ce cache.
+ */
+.reveal-pending .reveal:not([data-revealed])::after,
+.reveal--playing::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--c-slab);
+  transform-origin: top;
+}
+
+@media print {
+  .reveal::after {
+    display: none !important;
+  }
+}
+
+/* ==========================================================
+   Détails éditoriaux
+   ========================================================== */
+
+/* Traits de coupe d'impression aux quatre coins d'un bloc */
+.crop-marks {
+  /* Toujours plus petit que la marge latérale : aucun débordement */
+  --mark: clamp(0.5rem, 1.5vw, 0.9rem);
+  --mark-gap: 0.3rem;
+  position: relative;
+}
+
+.crop-marks::before,
+.crop-marks::after {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--mark-gap) - var(--mark));
+  pointer-events: none;
+  --edge: calc(var(--mark) + var(--mark-gap));
+  /* Traits pleins d'une seule couleur (currentColor), pas un dégradé */
+  background:
+    linear-gradient(currentColor, currentColor) 0 var(--edge) / var(--mark) 1px,
+    linear-gradient(currentColor, currentColor) var(--edge) 0 / 1px var(--mark),
+    linear-gradient(currentColor, currentColor) 100% var(--edge) / var(--mark) 1px,
+    linear-gradient(currentColor, currentColor) calc(100% - var(--edge)) 0 / 1px var(--mark);
+  background-repeat: no-repeat;
+}
+
+.crop-marks::after {
+  transform: scaleY(-1);
+}
+
+/* En-tête de section / de page : grand titre + compteur ou repère à droite */
+.section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: clamp(2rem, 5vw, 4rem);
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--c-fg);
+}
+
+.section-title {
+  font-size: clamp(3rem, 1.25rem + 9vw, 10rem);
+  line-height: 0.82;
+}
+
+.section-count {
+  display: grid;
+  flex-shrink: 0;
+  justify-items: end;
+  gap: 0.4rem;
+  margin: 0;
+  text-align: right;
+}
+
+.section-count__n {
+  font-family: var(--font-display-stack);
+  font-size: clamp(2.5rem, 1rem + 5vw, 6rem);
+  line-height: 0.8;
+  color: var(--c-mark);
+}
+
+/* Page intérieure : espace sous l'en-tête du site */
+.page {
+  padding-block: clamp(2.5rem, 6vw, 5rem) clamp(4rem, 9vw, 8rem);
+}
+
+/* Texte long (Markdown des projets) */
+.prose {
+  max-width: 64ch;
+}
+
+.prose > * + * {
+  margin-top: 1em;
+}
+
+.prose h2 {
+  margin-top: 2.2em;
+  margin-bottom: 0.6em;
+  font-size: clamp(1.9rem, 1.4rem + 2vw, 3rem);
+  line-height: var(--lh-title);
+}
+
+.prose h3 {
+  margin-top: 1.8em;
+  font-size: clamp(1.4rem, 1.2rem + 1vw, 2rem);
+  line-height: var(--lh-title);
+}
+
+.prose :is(ul, ol) {
+  padding-left: 1.2em;
+}
+
+.prose li + li {
+  margin-top: 0.35em;
+}
+
+.prose a {
+  color: var(--c-accent);
+}
+
+.prose blockquote {
+  margin-inline: 0;
+  padding-left: 1.2em;
+  border-left: 3px solid var(--c-mark);
+}
+
+.prose :is(code, pre) {
+  font-family: inherit;
+}
+
+/* Petite légende en capitales espacées */
+.label {
+  /* Aussi valable sur un titre (h2, h3) : on neutralise le style d'affiche */
+  font-family: var(--font-body-stack);
+  line-height: 1.3;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* ==========================================================
+   Transitions natives entre pages (ignorées si non prises en charge)
+   ========================================================== */
+@view-transition {
+  navigation: auto;
+}
+
+.site-header {
+  view-transition-name: site-header;
+}
+
+::view-transition-old(root) {
+  animation: vt-out 0.25s ease-in both;
+}
+
+::view-transition-new(root) {
+  animation: vt-in 0.5s var(--ease-out) both;
+}
+
+@keyframes vt-out {
+  to {
+    opacity: 0;
+    transform: translateY(-1rem);
+  }
+}
+
+@keyframes vt-in {
+  from {
+    opacity: 0;
+    transform: translateY(2.5rem);
+  }
+}
+
+/* ==========================================================
+   Mouvement réduit : suppression des animations non essentielles
+   ========================================================== */
+@media (prefers-reduced-motion: reduce) {
+  @view-transition {
+    navigation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

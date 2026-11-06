@@ -1,0 +1,26 @@
+---
+/**
+ * Logo temporaire : le nom de Ryan en texte.
+ * Pour le remplacer par un vrai logo, modifier uniquement ce composant
+ * (par exemple avec <Image /> ou un SVG), en gardant le texte accessible.
+ */
+import { site } from "../config/site";
+
+interface Props {
+  class?: string;
+}
+const { class: className } = Astro.props;
+---
+
+<span class:list={["logo", className]}>{site.name}</span>
+
+<style>
+  .logo {
+    font-family: var(--font-display-stack);
+    font-size: 1.35rem;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+</style>

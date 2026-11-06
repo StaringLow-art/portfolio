@@ -1,0 +1,87 @@
+---
+import ProjectCard from "./ProjectCard.astro";
+import type { Projet } from "../lib/projets";
+
+interface Props {
+  projets: Projet[];
+  headingLevel?: 2 | 3;
+}
+
+const { projets, headingLevel = 3 } = Astro.props;
+---
+
+<div class="mosaic">
+  {
+    projets.map((projet, i) => (
+      <ProjectCard projet={projet} index={i} total={projets.length} headingLevel={headingLevel} />
+    ))
+  }
+</div>
+
+<style>
+  /* =====================================================================
+     Mosaïque façon lookbook : portrait, paysage à fond perdu, carré.
+     Tailles et décalages variés, jamais trois colonnes identiques.
+     ===================================================================== */
+  /* Mosaïque limitée à --max (1440 px) et calée à gauche : sur très grand
+     écran, les vignettes ne deviennent pas démesurées et les images ne sont
+     pas agrandies au-delà de leur taille réelle. */
+  .mosaic {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: clamp(3rem, 7vw, 6rem) clamp(1rem, 3vw, 2.5rem);
+    max-width: var(--max);
+  }
+
+  .mosaic > :global(*) {
+    grid-column: 1 / -1;
+  }
+
+  .mosaic > :global(:nth-child(3n + 1)) {
+    --card-ratio: 4 / 5;
+  }
+
+  .mosaic > :global(:nth-child(3n + 2)) {
+    --card-ratio: 3 / 2;
+  }
+
+  /* Fond perdu à droite pour le paysage, tant que la mosaïque touche la marge
+     droite de l'écran (≤ 1440 px + 2 × 48 px). Le débord est porté par le
+     cadre (même taille d'image) pour que les repères de coupe l'entourent.
+     Au bord de l'écran, les traits horizontaux de droite (hors écran) sont
+     omis : le pseudo-élément s'arrête au bord, aucun défilement horizontal. */
+  @media (max-width: 96rem) {
+    .mosaic > :global(:nth-child(3n + 2)) :global(.card__frame) {
+      margin-right: calc(-1 * var(--gutter));
+    }
+
+    .mosaic > :global(:nth-child(3n + 2)) :global(.card__frame::before),
+    .mosaic > :global(:nth-child(3n + 2)) :global(.card__frame::after) {
+      right: 0;
+      background:
+        linear-gradient(currentColor, currentColor) 0 var(--edge) / var(--mark) 1px,
+        linear-gradient(currentColor, currentColor) var(--edge) 0 / 1px var(--mark),
+        linear-gradient(currentColor, currentColor) 100% 0 / 1px var(--mark);
+      background-repeat: no-repeat;
+    }
+  }
+
+  .mosaic > :global(:nth-child(3n + 3)) {
+    --card-ratio: 1 / 1;
+  }
+
+  @media (min-width: 48rem) {
+    .mosaic > :global(:nth-child(3n + 1)) {
+      grid-column: 1 / 7;
+    }
+
+    .mosaic > :global(:nth-child(3n + 2)) {
+      grid-column: 8 / -1;
+      margin-top: clamp(6rem, 22vw, 20rem);
+    }
+
+    .mosaic > :global(:nth-child(3n + 3)) {
+      grid-column: 3 / 9;
+    }
+  }
+</style>

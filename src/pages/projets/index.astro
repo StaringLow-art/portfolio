@@ -1,0 +1,35 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ProjectMosaic from "../../components/ProjectMosaic.astro";
+import { site } from "../../config/site";
+import { getProjetsPublies } from "../../lib/projets";
+
+const projets = await getProjetsPublies();
+const total = String(projets.length).padStart(2, "0");
+---
+
+<BaseLayout title="Projets" description={`Projets de ${site.name}, ${site.role}.`}>
+  <div class="wrap page">
+    <header class="section-head">
+      <h1 class="section-title">Projets</h1>
+      <p class="section-count">
+        <span class="section-count__n">{total}</span>
+        <span class="label">{projets.length > 1 ? "projets publiés" : "projet publié"}</span>
+      </p>
+    </header>
+
+    <ProjectMosaic projets={projets} headingLevel={2} />
+
+    <p class="projets__next">
+      <a class="link-arrow" href="/contact/">Contact</a>
+    </p>
+  </div>
+</BaseLayout>
+
+<style>
+  .projets__next {
+    margin: clamp(3rem, 7vw, 6rem) 0 0;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--c-fg);
+  }
+</style>
