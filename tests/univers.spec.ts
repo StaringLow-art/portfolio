@@ -272,10 +272,21 @@ test.describe("Jeux", () => {
     // Visuels typographiques : aucune image dans les favoris
     await expect(page.locator(".favoris img")).toHaveCount(0);
     await expect(page.locator(".jeu__visuel")).toHaveCount(6);
-    // Le nom de chaque jeu n'apparaît qu'une fois (dans sa pochette, comme titre)
+    // Dans les favoris, le nom de chaque jeu n'apparaît qu'une fois (dans sa
+    // pochette, comme titre). Les listes Steam peuvent, elles, citer le même jeu.
+    const favoris = page.locator(".favoris");
     for (const titre of FAVORIS) {
-      await expect(page.locator("main").getByText(titre, { exact: true }), titre).toHaveCount(1);
-      await expect(page.getByRole("heading", { level: 3, name: titre }), titre).toHaveCount(1);
+      await expect(favoris.getByText(titre, { exact: true }), titre).toHaveCount(1);
+      await expect(favoris.getByRole("heading", { level: 3, name: titre }), titre).toHaveCount(1);
+      // Hors favoris, seule la section Steam peut contenir ce nom
+      const ailleurs = await page.locator("main").evaluate(
+        (main, t) =>
+          [...main.querySelectorAll("*")].filter(
+            (el) => el.children.length === 0 && el.textContent?.trim() === t && !el.closest(".favoris, [data-steam]"),
+          ).length,
+        titre,
+      );
+      expect(ailleurs, `${titre} répété hors favoris et Steam`).toBe(0);
     }
     // Aucune légende vide sous les pochettes
     await expect(page.locator(".jeu__caption")).toHaveCount(0);
