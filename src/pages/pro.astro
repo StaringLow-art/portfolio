@@ -1,0 +1,156 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ParcoursContenu from "../components/ParcoursContenu.astro";
+import ProjectMosaic from "../components/ProjectMosaic.astro";
+import { site } from "../config/site";
+import { getProjetsPublies } from "../lib/projets";
+import { largeurEm } from "../lib/anton";
+
+const TITRE = "Professionnel";
+/** Largeur du titre en Anton (em, +2 % de marge) : il tient sur une ligne, sans coupure. */
+const titreEm = (largeurEm(TITRE) * 1.02).toFixed(3);
+const projets = await getProjetsPublies();
+const total = String(projets.length).padStart(2, "0");
+---
+
+<BaseLayout
+  title={TITRE}
+  description={`${site.name}, ${site.role}, région de ${site.location}. Disponibilité, CV, projets et parcours.`}
+>
+  <div class="wrap page pro">
+    <!-- En-tête : métier, région, disponibilité, CV (contenu de l'ancien héros) -->
+    <header class="pro__head" style={`--titre-em: ${titreEm}`}>
+      <h1 class="pro__title">{TITRE}</h1>
+      <div class="pro__intro">
+        <p class="pro__role">{site.role}</p>
+        <ul class="pro__facts" role="list">
+          <li><span class="pro__fact-label">Région&nbsp;:</span> {site.location}</li>
+          <li>{site.availability}</li>
+        </ul>
+        <div class="pro__actions">
+          <a class="btn" href={site.cvPath} download>
+            Télécharger le CV <span class="pro__format">PDF</span>
+          </a>
+          <a class="btn btn--ghost" href="/contact/">Contact</a>
+        </div>
+      </div>
+    </header>
+
+    <section class="pro__section" id="projets" aria-labelledby="titre-projets">
+      <header class="section-head">
+        <h2 class="section-title" id="titre-projets">Projets IT</h2>
+        <p class="section-count">
+          <span class="section-count__n">{total}</span>
+          <span class="label">{projets.length > 1 ? "projets publiés" : "projet publié"}</span>
+        </p>
+      </header>
+      <!-- La 1re vignette arrive en bas du premier écran : chargée tout de suite -->
+      <ProjectMosaic projets={projets} headingLevel={3} eager={1} />
+    </section>
+
+    <section class="pro__section" id="parcours" aria-labelledby="titre-parcours">
+      <header class="section-head">
+        <h2 class="section-title" id="titre-parcours">Parcours</h2>
+      </header>
+      <ParcoursContenu />
+    </section>
+
+    <p class="pro__next">
+      <a class="link-arrow" href="/contact/">Contact</a>
+    </p>
+  </div>
+</BaseLayout>
+
+<style>
+  /* ============ En-tête : grand titre, puis le bloc d'informations dessous ============ */
+  .pro__head {
+    container-type: inline-size;
+    display: grid;
+    gap: clamp(1.5rem, 4vw, 3rem);
+    padding-bottom: clamp(2.5rem, 6vw, 4.5rem);
+  }
+
+  /* « PROFESSIONNEL » tient toujours sur une ligne : au plus la largeur
+     disponible divisée par la largeur du mot en Anton (--titre-em). */
+  .pro__title {
+    font-size: min(clamp(5rem, 2rem + 16vw, 16rem), calc(100cqi / var(--titre-em)));
+    line-height: 0.8;
+    white-space: nowrap;
+  }
+
+  .pro__role {
+    max-width: 24ch;
+    margin: 0 0 1.5rem;
+    font-size: clamp(1.25rem, 0.9rem + 1.6vw, 2.25rem);
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  .pro__facts {
+    display: grid;
+    gap: 0.75rem;
+    margin: 0 0 1.5rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .pro__facts li {
+    max-width: 52ch;
+    padding-top: 0.6rem;
+    border-top: 1px solid var(--c-fg);
+  }
+
+  .pro__fact-label {
+    margin-right: 0.2em;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .pro__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .pro__format {
+    font-size: 0.75em;
+    letter-spacing: 0.08em;
+  }
+
+  /* Ordinateur : sous le titre, le métier à gauche, les informations à droite */
+  @media (min-width: 64rem) {
+    .pro__intro {
+      display: grid;
+      grid-template-columns: 5fr 7fr;
+      gap: 0 3rem;
+      align-items: start;
+    }
+
+    .pro__role {
+      margin: 0;
+    }
+
+    .pro__facts {
+      max-width: 40rem;
+    }
+
+    .pro__actions {
+      grid-column: 2;
+    }
+  }
+
+  /* ============ Sections Projets et Parcours ============ */
+  .pro__section {
+    padding-top: clamp(3rem, 8vw, 7rem);
+  }
+
+  .pro__next {
+    margin: clamp(3rem, 7vw, 6rem) 0 0;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--c-fg);
+  }
+</style>

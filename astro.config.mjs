@@ -14,8 +14,9 @@ export default defineConfig({
   devToolbar: { enabled: false },
   integrations: [
     sitemap({
-      // La page 404 n'a rien à faire dans le plan du site.
-      filter: (page) => !page.startsWith(`${SITE}/404`),
+      // Ni la page 404, ni les anciennes adresses (redirigées vers /pro/).
+      filter: (page) =>
+        !page.startsWith(`${SITE}/404`) && ![`${SITE}/projets/`, `${SITE}/parcours/`].includes(page),
     }),
     pruneUnusedAssets(),
   ],

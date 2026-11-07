@@ -4,8 +4,11 @@ const WIDTHS = [320, 375, 768, 1024, 1440, 1920, 2560];
 const heightFor = (w: number) => (w < 768 ? 812 : w >= 2560 ? 1440 : 900);
 
 const TITLES: Array<[string, string]> = [
-  ["/projets/", ".card__title"],
-  ["/", ".card__title"],
+  ["/pro/", ".card__title"],
+  ["/", ".univers-card__title"],
+  ["/jeux/", ".jeu__titre"],
+  ["/pro/", ".pro__title"],
+  ["/pro/", ".section-title"],
   ["/projets/projet-cfc/", ".projet__title"],
   ["/projets/projet-cfc/", ".projet__next-title"],
   ["/projets/homelab/", ".projet__next-title"],
@@ -104,7 +107,7 @@ for (const width of WIDTHS) {
       expect(problems).toEqual([]);
     });
 
-    test("marges : logo, texte du héros et titre PROJETS alignés à gauche ; portrait et menu à droite", async ({ page }) => {
+    test("marges : logo, texte du héros et titre UNIVERS alignés à gauche ; portrait et menu à droite", async ({ page }) => {
       await page.goto("/");
       await page.evaluate(() => document.fonts.ready);
       const a = await page.evaluate(() => {
@@ -121,32 +124,30 @@ for (const width of WIDTHS) {
           logo: textLeft(".logo"),
           kicker: textLeft(".hero__kicker"),
           role: textLeft(".hero__role"),
-          facts: left(".hero__facts"),
-          cv: left(".hero__actions a"),
-          projets: left(".section-title"),
+          univers: left(".section-title"),
           headerRight: right(".site-header .theme-toggle"),
           photoRight: right(".hero__figure"),
-          projetsHeadRight: right(".section-head"),
+          sectionHeadRight: right(".section-head"),
         };
       });
-      for (const [name, value] of Object.entries({ kicker: a.kicker, role: a.role, facts: a.facts, cv: a.cv, projets: a.projets })) {
+      for (const [name, value] of Object.entries({ kicker: a.kicker, role: a.role, univers: a.univers })) {
         // Tolérance : approche latérale des glyphes d'Anton / d'Instrument Sans
         expect(Math.abs(value - a.logo), `${name} aligné sur le logo`).toBeLessThanOrEqual(4);
       }
       if (width >= 768) {
         expect(Math.abs(a.photoRight - a.headerRight), "portrait aligné sur le bord droit du menu").toBeLessThanOrEqual(1.5);
-        expect(Math.abs(a.projetsHeadRight - a.headerRight), "sections alignées sur le menu").toBeLessThanOrEqual(1.5);
+        expect(Math.abs(a.sectionHeadRight - a.headerRight), "sections alignées sur le menu").toBeLessThanOrEqual(1.5);
       }
     });
 
     test("mosaïque : repères de coupe autour de chaque image, sans débordement", async ({ page }) => {
-      for (const url of ["/projets/", "/"]) {
+      for (const url of ["/pro/", "/", "/jeux/"]) {
         await page.goto(url);
         const r = await page.evaluate(() => {
           const vw = document.documentElement.clientWidth;
           return {
             overflow: document.documentElement.scrollWidth - vw,
-            frames: [...document.querySelectorAll(".card__frame")].map((f) => {
+            frames: [...document.querySelectorAll(".card__frame, .univers-card__frame, .jeu__frame")].map((f) => {
               const rect = f.getBoundingClientRect();
               return ["::before", "::after"].map((p) => {
                 const cs = getComputedStyle(f, p);
@@ -172,7 +173,7 @@ for (const width of WIDTHS) {
 
     test("largeur de lecture : aucune ligne de texte au-delà de 75 caractères", async ({ page }) => {
       const tooWide: string[] = [];
-      for (const url of ["/", "/projets/", "/projets/projet-cfc/", "/projets/homelab/", "/parcours/", "/contact/", "/cette-page-n-existe-pas/"]) {
+      for (const url of ["/", "/pro/", "/jeux/", "/projets/projet-cfc/", "/projets/homelab/", "/contact/", "/cette-page-n-existe-pas/"]) {
         await page.goto(url);
         await page.evaluate(() => document.fonts.ready);
         const found = await page.locator("main p, main li").evaluateAll((els) => {
@@ -202,7 +203,7 @@ for (const width of WIDTHS) {
     test("technologies et compétences : aucun séparateur « / »", async ({ page }) => {
       for (const [url, selector] of [
         ["/projets/projet-cfc/", ".projet__tech li"],
-        ["/parcours/", ".groupe__liste li"],
+        ["/pro/", ".groupe__liste li"],
       ] as const) {
         await page.goto(url);
         const seps = await page.locator(selector).evaluateAll((els) =>
@@ -217,7 +218,7 @@ for (const width of WIDTHS) {
     });
 
     test("capture PRTG : entière dans la vignette, lien vers la taille réelle", async ({ page, request }) => {
-      await page.goto("/projets/");
+      await page.goto("/pro/");
       const card = page.locator(".card").filter({ hasText: "PRTG" }).locator(".card__media");
       const ratio = await card.evaluate((el) => {
         const r = el.getBoundingClientRect();
@@ -234,7 +235,7 @@ for (const width of WIDTHS) {
     });
 
     test("Parcours : aucune ligne de période ne commence par un tiret", async ({ page }) => {
-      await page.goto("/parcours/");
+      await page.goto("/pro/");
       await page.evaluate(() => document.fonts.ready);
       const bad = await page.locator(".etape__periode").evaluateAll((els) =>
         els.flatMap((el) => {
@@ -265,7 +266,8 @@ for (const width of WIDTHS) {
       const g = await page.evaluate(() => {
         const i = document.querySelector<HTMLImageElement>(".projet__cover img")!;
         const r = i.getBoundingClientRect();
-        const title = document.querySelector(".projet__title")!.getBoundingClientRect();
+        // Bord gauche du contenu de l'en-tête : le numéro, à gauche du titre
+        const title = document.querySelector(".projet__num")!.getBoundingClientRect();
         const column = document.querySelector(".projet__head")!;
         const cs = getComputedStyle(column);
         const c = column.getBoundingClientRect();

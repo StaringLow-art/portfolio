@@ -1,11 +1,17 @@
-# Vérifie puis publie le site sur GitHub Pages à chaque push sur main.
+# Vérifie puis publie le site sur GitHub Pages :
+#  - à chaque push sur main ;
+#  - chaque jour (données Steam à jour) ;
+#  - à la demande, depuis l'onglet Actions.
 # Le déploiement n'a lieu que si toutes les vérifications réussissent.
 name: Vérifier et publier
 
 on:
   push:
     branches: [main]
-  # Permet de relancer le workflow à la main depuis l'onglet Actions
+  schedule:
+    # Chaque jour à 05:17 UTC (06:17 ou 07:17 à Lausanne). GitHub peut retarder
+    # ces exécutions et les désactive après 60 jours sans activité sur le dépôt.
+    - cron: "17 5 * * *"
   workflow_dispatch:
 
 # Permissions minimales par défaut : lecture du dépôt uniquement
@@ -41,11 +47,38 @@ jobs:
       - name: Installer Chromium et Firefox pour les tests
         run: npx playwright install --with-deps chromium firefox
 
+      # Données Steam : les dernières données valides sont reprises du cache,
+      # puis mises à jour si possible. Un échec ne bloque jamais la publication.
+      - name: Reprendre les dernières données Steam
+        uses: actions/cache/restore@v6
+        with:
+          path: .steam
+          key: steam-${{ github.run_id }}
+          restore-keys: steam-
+
+      - name: Mettre à jour les données Steam
+        run: npm run steam:fetch
+        env:
+          # Seule étape qui reçoit la clé (secret du dépôt, masqué dans les journaux)
+          STEAM_API_KEY: ${{ secrets.STEAM_API_KEY }}
+
+      - name: Conserver les données Steam
+        if: hashFiles('.steam/**') != ''
+        uses: actions/cache/save@v6
+        with:
+          path: .steam
+          key: steam-${{ github.run_id }}
+
       - name: Contrôles, build, tests et vie privée
         run: npm run verify
 
       - name: Contrôle de mise en ligne
         run: npm run check:launch
+
+      - name: Vérifier que la clé Steam n'apparaît nulle part
+        run: npm run check:privacy
+        env:
+          STEAM_API_KEY: ${{ secrets.STEAM_API_KEY }}
 
       - name: Préparer le site pour GitHub Pages
         uses: actions/upload-pages-artifact@v5

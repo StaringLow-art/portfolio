@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { SITE_ORIGIN, watchPage } from "./helpers";
 
 const SITE = "https://portfolio.cardamone-online.ch";
-const PUBLIC_PAGES = ["/", "/projets/", "/projets/homelab/", "/projets/projet-cfc/", "/parcours/", "/contact/"];
+const PUBLIC_PAGES = ["/", "/pro/", "/jeux/", "/projets/homelab/", "/projets/projet-cfc/", "/contact/"];
 const NOT_FOUND = "/cette-page-n-existe-pas/";
 const ALL_PAGES = [...PUBLIC_PAGES, NOT_FOUND];
 
@@ -159,7 +159,7 @@ test.describe("sans JavaScript, toutes les pages", () => {
     });
   }
 
-  for (const url of ["/", "/parcours/", "/contact/", NOT_FOUND]) {
+  for (const url of ["/pro/", "/contact/", NOT_FOUND]) {
     test(`${url} : CV accessible`, async ({ page, request }) => {
       await page.goto(url);
       const link = page.locator('a[href="/Ryan-Cardamone-CV.pdf"]').first();
@@ -209,8 +209,8 @@ for (const motion of ["no-preference", "reduce"] as const) {
       });
     });
     await page.goto("/");
-    await page.getByRole("navigation", { name: "Navigation principale" }).getByRole("link", { name: "Parcours" }).click();
-    await expect(page).toHaveURL(/\/parcours\/$/);
+    await page.getByRole("navigation", { name: "Navigation principale" }).getByRole("link", { name: "Pro" }).click();
+    await expect(page).toHaveURL(/\/pro\/$/);
     const vt = await page.evaluate(() => (window as unknown as { __vt?: boolean }).__vt);
     expect(vt).toBe(motion === "no-preference");
   });

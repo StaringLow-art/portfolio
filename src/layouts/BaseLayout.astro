@@ -9,11 +9,18 @@ interface Props {
   /** Titre de la page (sans le nom du site). Omis sur l'accueil. */
   title?: string;
   description: string;
+  /**
+   * Ancienne adresse : redirige vers cette adresse interne (ex. « /pro/#projets »).
+   * GitHub Pages ne permet pas de redirection HTTP : la page redirige par
+   * <meta http-equiv="refresh">, n'est pas indexée et désigne sa nouvelle
+   * adresse comme canonique.
+   */
+  redirectTo?: string;
 }
 
-const { title, description } = Astro.props;
-const fullTitle = title ? `${title} — ${site.name}` : `${site.name} — ${site.role}`;
-const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const { title, description, redirectTo } = Astro.props;
+const fullTitle = title ? `${title} — ${site.name}` : `${site.name} — ${site.presentation}`;
+const canonical = new URL(redirectTo ? redirectTo.split("#")[0]! : Astro.url.pathname, Astro.site).href;
 const ogImage = new URL("/og-image.png", Astro.site).href;
 ---
 
@@ -22,6 +29,8 @@ const ogImage = new URL("/og-image.png", Astro.site).href;
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {redirectTo && <meta http-equiv="refresh" content={`0;url=${redirectTo}`} />}
+    {redirectTo && <meta name="robots" content="noindex" />}
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
@@ -61,6 +70,7 @@ const ogImage = new URL("/og-image.png", Astro.site).href;
     <meta property="og:image" content={ogImage} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <!-- L'image de partage affiche le nom et le métier (npm run generate:images) -->
     <meta property="og:image:alt" content={`${site.name} — ${site.role}`} />
     <meta name="twitter:card" content="summary_large_image" />
     <slot name="head" />
@@ -115,7 +125,13 @@ const ogImage = new URL("/og-image.png", Astro.site).href;
               }
             }
           });
-          for (const el of elements) observer.observe(el);
+          for (const el of elements) {
+            // Déjà à l'écran au démarrage : révélée tout de suite, sans attendre
+            // l'observateur (que Firefox peut retarder quand l'ordinateur est chargé).
+            const r = el.getBoundingClientRect();
+            if (r.bottom > 0 && r.top < window.innerHeight && r.width > 0) play(el);
+            else observer.observe(el);
+          }
           window.addEventListener("beforeprint", () => elements.forEach(play));
         } catch {
           root.classList.remove("reveal-pending");

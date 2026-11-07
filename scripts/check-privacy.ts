@@ -13,6 +13,7 @@ import sharp from "sharp";
 import { extractText, getDocumentProxy, getMeta } from "unpdf";
 import { DIST, ROOT, Report, listProjectFiles, walk } from "./lib.ts";
 import { site } from "../src/config/site.ts";
+import { steamDataSchema } from "../src/schemas/steam.ts";
 
 const report = new Report("Contrôle de vie privée");
 
@@ -49,6 +50,8 @@ const RULES: Rule[] = [
   { name: "clé Google", re: /\bAIza[0-9A-Za-z_-]{35}\b/g },
   { name: "jeton Slack", re: /\bxox[abprs]-[A-Za-z0-9-]{10,}/g },
   { name: "clé d'API (sk-)", re: /\bsk-[A-Za-z0-9_-]{20,}/g },
+  // Les clés de l'API Steam : 32 caractères hexadécimaux en majuscules
+  { name: "clé d'API Steam probable", re: /\b[0-9A-F]{32}\b/g },
 ];
 
 const ADDRESS_RULE: Rule = {
@@ -248,6 +251,37 @@ if (!existsSync(DIST)) {
     await checkFile(`dist/${file}`, path.join(DIST, file), file.endsWith(".html"));
   }
   report.ok(`${distFiles.length} fichiers de dist/ analysés`);
+}
+
+// Données Steam (.steam/steam.json, hors Git) : uniquement des noms de jeux
+// et des durées, conformes au schéma strict (aucun champ en plus).
+const STEAM_FILE = path.join(ROOT, ".steam", "steam.json");
+if (existsSync(STEAM_FILE)) {
+  try {
+    const parsed = steamDataSchema.safeParse(JSON.parse(readFileSync(STEAM_FILE, "utf8")));
+    if (parsed.success) report.ok(".steam/steam.json : uniquement des noms de jeux et des durées");
+    else report.fail(".steam/steam.json : contenu non conforme (champ inattendu ou invalide)");
+  } catch {
+    report.fail(".steam/steam.json : illisible");
+  }
+  scanText(".steam/steam.json", readFileSync(STEAM_FILE, "utf8"), false);
+}
+
+// Clé Steam réelle (si fournie, comme dans GitHub Actions) : absente partout.
+// Elle n'est jamais affichée, même en cas d'échec.
+const steamKey = process.env.STEAM_API_KEY?.trim();
+if (steamKey) {
+  const where: string[] = [];
+  const all = [
+    ...projectFiles.map((f) => [f, path.join(ROOT, f)] as const),
+    ...(existsSync(DIST) ? walk(DIST, new Set()).map((f) => [`dist/${f}`, path.join(DIST, f)] as const) : []),
+    ...(existsSync(STEAM_FILE) ? [[".steam/steam.json", STEAM_FILE] as const] : []),
+  ];
+  for (const [label, absolute] of all) {
+    if (readFileSync(absolute).includes(steamKey)) where.push(label);
+  }
+  if (where.length) report.fail(`clé STEAM_API_KEY trouvée dans : ${where.join(", ")}`);
+  else report.ok(`clé STEAM_API_KEY absente des ${all.length} fichiers analysés`);
 }
 
 report.finish();

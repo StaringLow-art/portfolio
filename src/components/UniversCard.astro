@@ -1,0 +1,119 @@
+---
+/**
+ * Carte d'un univers (accueil) : grand titre en bas à gauche, description
+ * sous la carte. Aucune image, aucun numéro.
+ * Les univers alternent deux aplats : encre (couleur du texte) et bordeaux.
+ */
+import type { Univers } from "../config/univers";
+
+interface Props {
+  univers: Univers;
+  index: number;
+  /** Largeur (em) du titre le plus long parmi les univers : tous les titres
+   *  ont ainsi la même taille, et le plus long tient dans sa carte. */
+  motEm: number;
+}
+
+const { univers, index, motEm } = Astro.props;
+const aplat = index % 2 === 0 ? "univers-card__visuel--encre" : "univers-card__visuel--bordeaux grain-slab";
+---
+
+<article class="univers-card" style={`--mot-em: ${motEm.toFixed(3)}`}>
+  <div class="univers-card__frame crop-marks">
+    <div class:list={["univers-card__visuel", aplat]}>
+      <h3 class="univers-card__title">
+        <a href={`/${univers.slug}/`}><span class="univers-card__mot">{univers.titre}</span></a>
+      </h3>
+    </div>
+  </div>
+  <!-- Filet sur toute la largeur de la carte ; texte limité à une largeur de lecture -->
+  <div class="univers-card__resume">
+    <p>{univers.resume}</p>
+  </div>
+</article>
+
+<style>
+  .univers-card {
+    display: grid;
+    align-content: start;
+    gap: 1.1rem;
+  }
+
+  /* Le cadre sert de référence aux unités cqi du visuel */
+  .univers-card__frame {
+    container-type: inline-size;
+  }
+
+  /* Pochette : grand titre en bas à gauche, dans la marge intérieure */
+  .univers-card__visuel {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    aspect-ratio: 4 / 3;
+    padding: 6cqi 7cqi;
+    overflow: hidden;
+  }
+
+  /* Ordinateur : un tiers moins haut (4:3 → 2:1, même largeur) */
+  @media (min-width: 48rem) {
+    .univers-card__visuel {
+      aspect-ratio: 2 / 1;
+      padding-block: 4cqi;
+    }
+  }
+
+  .univers-card__visuel--encre {
+    background: var(--c-fg);
+    color: var(--c-bg);
+  }
+
+  .univers-card__visuel--bordeaux {
+    color: var(--c-on-slab);
+  }
+
+  /* Taille commune à toutes les cartes : 30 % de la largeur au plus, et le
+     titre le plus long tient dans la largeur utile (100 − 2 × 7 % de marge). */
+  .univers-card__title {
+    font-size: min(30cqi, calc(86cqi / var(--mot-em, 3)));
+    line-height: 0.8;
+    white-space: nowrap;
+  }
+
+  .univers-card__title a {
+    text-decoration: none;
+  }
+
+  .univers-card__title a:hover {
+    color: inherit;
+  }
+
+  /* Toute la pochette est cliquable, sans dupliquer le lien
+     (le cadre, en position relative, sert de référence) */
+  .univers-card__title a::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+
+  /* Survol : léger agrandissement du mot (jamais sur le lien lui-même,
+     qui doit rester la référence de la zone cliquable) */
+  .univers-card__mot {
+    display: inline-block;
+    transition: transform 0.6s var(--ease-out);
+    transform-origin: 0 100%;
+  }
+
+  .univers-card__visuel:hover .univers-card__mot {
+    transform: scale(1.03);
+  }
+
+  .univers-card__resume {
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--c-fg);
+  }
+
+  .univers-card__resume p {
+    max-width: 52ch;
+    margin: 0;
+  }
+</style>

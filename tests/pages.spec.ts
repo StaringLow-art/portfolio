@@ -6,11 +6,11 @@ const PRIVACY_URL =
   "https://docs.github.com/fr/pages/getting-started-with-github-pages/what-is-github-pages#data-collection";
 
 test.describe("Projets", () => {
-  test("la mosaïque numérote les projets publiés « N°01/02 »", async ({ page }) => {
-    await page.goto("/projets/");
+  test("la mosaïque numérote les projets publiés « 01 », « 02 »", async ({ page }) => {
+    await page.goto("/pro/");
     await expect(page.locator(".card")).toHaveCount(2);
-    await expect(page.locator(".card__num")).toHaveText(["N°01/02", "N°02/02"]);
-    await expect(page.locator(".card h2")).toHaveCount(2);
+    await expect(page.locator(".card__num")).toHaveText(["01", "02"]);
+    await expect(page.locator(".card h3")).toHaveCount(2);
     // Titre et résumé lisibles sans survol
     for (const card of await page.locator(".card").all()) {
       await expect(card.locator(".card__title")).toBeVisible();
@@ -20,7 +20,8 @@ test.describe("Projets", () => {
 
   test("page détail : numéro, titre, fiche, image, pas de section Documents vide", async ({ page }) => {
     await page.goto("/projets/homelab/");
-    await expect(page.locator(".projet__num")).toHaveText("N°01/02");
+    await expect(page.locator(".projet__num")).toHaveText("01");
+    await expect(page.locator(".projet__next .label")).toHaveText("Projet suivant · 02");
     await expect(page.locator("h1")).toHaveText("Homelab");
     await expect(page.getByText("Rôle", { exact: true })).toBeVisible();
     await expect(page.getByText("Technologies", { exact: true })).toBeVisible();
@@ -34,8 +35,8 @@ test.describe("Projets", () => {
   });
 });
 
-test("Parcours : lien vers le CV", async ({ page }) => {
-  await page.goto("/parcours/");
+test("Pro : lien vers le CV", async ({ page }) => {
+  await page.goto("/pro/");
   await expect(page.getByRole("link", { name: /Télécharger le CV/ })).toHaveAttribute("href", "/Ryan-Cardamone-CV.pdf");
 });
 
@@ -108,7 +109,7 @@ test("404 : statut, titre, retour à l'accueil, non indexée", async ({ page }) 
 });
 
 test("le CV se télécharge", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/pro/");
   const [download] = await Promise.all([
     page.waitForEvent("download"),
     page.getByRole("link", { name: /Télécharger le CV/ }).first().click(),

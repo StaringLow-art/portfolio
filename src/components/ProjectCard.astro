@@ -1,16 +1,21 @@
 ---
 import { Image } from "astro:assets";
-import { numero, type Projet } from "../lib/projets";
+import { rang, type Projet } from "../lib/projets";
 
 interface Props {
   projet: Projet;
   index: number;
-  total: number;
   /** Niveau du titre selon la page (h2 ou h3). */
   headingLevel?: 2 | 3;
+  /**
+   * Image chargée tout de suite (au lieu d'attendre l'arrivée à l'écran) :
+   * pour une vignette proche du haut de la page. Firefox ne charge une image
+   * différée qu'une fois à l'écran, ce qui retardait sa révélation.
+   */
+  eager?: boolean;
 }
 
-const { projet, index, total, headingLevel = 3 } = Astro.props;
+const { projet, index, headingLevel = 3, eager = false } = Astro.props;
 const Heading = `h${headingLevel}` as "h2" | "h3";
 const href = `/projets/${projet.id}/`;
 ---
@@ -29,14 +34,14 @@ const href = `/projets/${projet.id}/`;
         alt={projet.data.coverAlt}
         widths={[480, 720, 960, 1280, 1600]}
         sizes="(min-width: 64rem) 55vw, 100vw"
-        loading="lazy"
+        loading={eager ? "eager" : "lazy"}
         format="webp"
         quality={88}
       />
     </div>
   </div>
   <div class="card__caption">
-    <p class="card__num">{numero(index, total)}</p>
+    <p class="card__num">{rang(index)}</p>
     <div class="card__text">
       <Heading class="card__title">
         <a href={href}>{projet.data.title}</a>
@@ -76,27 +81,43 @@ const href = `/projets/${projet.id}/`;
 
   /* Légende façon liste de titres d'album : numéro de piste au-dessus du titre,
      qui garde ainsi toute la largeur (mots longs comme « d'infrastructure »). */
+  /* Numéro à gauche du titre, sur la même ligne ; la suite du titre et le
+     résumé restent dans la colonne du titre. */
   .card__caption {
+    --ft: clamp(1.75rem, 1.2rem + 2.2vw, 3.25rem);
+    --fn: clamp(1.5rem, 1rem + 1.8vw, 2.5rem);
     display: grid;
-    gap: 0.35rem;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    column-gap: 0.6em;
     padding-top: 0.75rem;
     border-top: 1px solid var(--c-fg);
     min-width: 0;
   }
 
-  /* Numéro de piste unique, façon pochette : « N°01/02 » */
+  /* Numéro de piste unique, façon pochette : « 01 ». Le haut de ses chiffres
+     est aligné sur le haut des capitales du titre (métriques d'Anton,
+     src/lib/anton.ts) : haut des capitales = interligne / 2 − 0,4355 × taille.
+     Titre : interligne 1,22 em + 2 px → 0,1745 × titre + 1 px ;
+     numéro : interligne 0,95 em → 0,0395 × numéro. */
   .card__num {
-    margin: 0;
+    margin: calc(0.1745 * var(--ft) + 1px - 0.0395 * var(--fn)) 0 0;
     font-family: var(--font-display-stack);
-    font-size: clamp(1.5rem, 1rem + 1.8vw, 2.5rem);
+    font-size: var(--fn);
     line-height: 0.95;
     letter-spacing: 0.01em;
     color: var(--c-mark);
     white-space: nowrap;
   }
 
+  .card__text {
+    display: grid;
+    gap: 0.35rem;
+    min-width: 0;
+  }
+
   .card__title {
-    font-size: clamp(1.75rem, 1.2rem + 2.2vw, 3.25rem);
+    font-size: var(--ft);
     line-height: var(--lh-title);
     margin-bottom: 0.5rem;
   }

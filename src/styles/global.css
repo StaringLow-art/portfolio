@@ -342,6 +342,9 @@ a:hover {
 /* En-tête de section / de page : grand titre + compteur ou repère à droite */
 .section-head {
   display: flex;
+  /* Écran très étroit (ex. 320 px avec barre de défilement) : le compteur
+     passe sous le titre, toujours calé à droite, au lieu de déborder. */
+  flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
   gap: 1rem;
@@ -360,7 +363,7 @@ a:hover {
   flex-shrink: 0;
   justify-items: end;
   gap: 0.4rem;
-  margin: 0;
+  margin: 0 0 0 auto;
   text-align: right;
 }
 

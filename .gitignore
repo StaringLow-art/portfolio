@@ -2,6 +2,8 @@
 node_modules/
 dist/
 .astro/
+# Données Steam récupérées à la génération (conservées par le cache de GitHub Actions)
+.steam/
 
 # Rapports de tests et de Lighthouse
 test-results/

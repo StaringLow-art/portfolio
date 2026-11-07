@@ -19,14 +19,12 @@ test.describe("héros : géométrie", () => {
         const lines = [...document.querySelectorAll(".hero__line")].map((l) => l.getBoundingClientRect());
         const figure = r(document.querySelector(".hero__figure"));
         const slab = r(document.querySelector(".hero__slab"));
-        const info = [...document.querySelectorAll(".hero__role, .hero__facts > li, .hero__actions a")].map((e) =>
-          e.getBoundingClientRect(),
-        );
+        const info = [...document.querySelectorAll(".hero__kicker, .hero__role")].map((e) => e.getBoundingClientRect());
         const covers = info.some(
           (b) => !(b.right <= figure.left || b.left >= figure.right || b.bottom <= figure.top || b.top >= figure.bottom),
         );
         // Ce qui est réellement au premier plan sur chaque information doit être cette information
-        const infoEls = [...document.querySelectorAll(".hero__role, .hero__facts li, .hero__actions a")];
+        const infoEls = [...document.querySelectorAll(".hero__kicker, .hero__role")];
         const obscured = infoEls.filter((el) => {
           // Un rectangle par ligne de texte réellement occupée
           const points = [...el.getClientRects()].flatMap((b) => [
@@ -78,7 +76,7 @@ test.describe("héros : géométrie", () => {
       const line2Top = g.lineTops[1];
       const betweenLines = line2Top !== undefined && g.figureBottom <= line2Top + 1;
       expect(betweenLines || g.figureBottom >= g.nameBottom - 1).toBe(true);
-      // Métier, région, disponibilité et boutons jamais recouverts
+      // Présentation jamais recouverte
       expect(g.covers).toBe(false);
       expect(g.obscured).toBe(0);
       // Le haut de la tête n'est jamais coupé : le portrait reste dans le héros
@@ -95,7 +93,7 @@ test.describe("héros : géométrie", () => {
   }
 });
 
-test.describe("images de projets : toujours révélées", () => {
+test.describe("images de projets (page Pro) : toujours révélées", () => {
   /** Vrai si le cache bordeaux recouvre encore l'image n° index. */
   const covered = (index: number) => `(() => {
     const cs = getComputedStyle(document.querySelectorAll('.card__media')[${index}], '::after');
@@ -104,7 +102,7 @@ test.describe("images de projets : toujours révélées", () => {
   })()`;
 
   test("révélées au défilement, une seule fois", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/pro/");
     const count = await page.locator(".card__media").count();
     expect(count).toBeGreaterThan(0);
     for (let i = 0; i < count; i++) {
@@ -122,7 +120,7 @@ test.describe("images de projets : toujours révélées", () => {
 
   test("hors écran, l'image reste cachée jusqu'à son arrivée à l'écran", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 700 });
-    await page.goto("/");
+    await page.goto("/pro/");
     const last = (await page.locator(".card__media").count()) - 1;
     await page.waitForTimeout(1000);
     expect(await page.evaluate(covered(last))).toBe(true);
@@ -137,7 +135,7 @@ test.describe("images de projets : toujours révélées", () => {
       const html = (await response.text()).replace(/<script type="module">(?:(?!<\/script>)[\s\S])*__revealReady(?:(?!<\/script>)[\s\S])*<\/script>/, "");
       await route.fulfill({ response, body: html });
     });
-    await page.goto("/");
+    await page.goto("/pro/");
     expect(await page.evaluate(() => "__revealReady" in window)).toBe(false);
     await expect.poll(() => page.locator("html").getAttribute("class"), { timeout: 4000 }).not.toContain("reveal-pending");
     expect(await page.evaluate(covered(0))).toBe(false);
@@ -145,7 +143,7 @@ test.describe("images de projets : toujours révélées", () => {
 
   test("aucun cache avec mouvement réduit", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.goto("/");
+    await page.goto("/pro/");
     await expect(page.locator("html")).not.toHaveClass(/reveal-pending/);
     expect(await page.evaluate(covered(0))).toBe(false);
   });
@@ -153,8 +151,8 @@ test.describe("images de projets : toujours révélées", () => {
 test.describe("sans JavaScript", () => {
   test.use({ javaScriptEnabled: false });
 
-  test("images visibles, bouton de thème caché, CV accessible", async ({ page }) => {
-    await page.goto("/");
+  test("images visibles, bouton de thème caché, CV accessible (page Pro)", async ({ page }) => {
+    await page.goto("/pro/");
     await expect(page.locator("html")).not.toHaveClass(/reveal-pending/);
     await expect(page.locator("[data-theme-toggle]")).toBeHidden();
     await expect(page.locator("h1")).toBeVisible();

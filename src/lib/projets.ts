@@ -18,8 +18,7 @@ export async function getProjetsPublies(): Promise<Projet[]> {
   return projets;
 }
 
-/** Numérotation façon album : « N°01/02 ». */
-export function numero(index: number, total: number): string {
-  const deux = (n: number) => String(n).padStart(2, "0");
-  return `N°${deux(index + 1)}/${deux(total)}`;
+/** Numéro unique du site, sur deux chiffres : « 01 », « 02 »… (projets, univers, jeux). */
+export function rang(index: number): string {
+  return String(index + 1).padStart(2, "0");
 }

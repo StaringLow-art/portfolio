@@ -5,15 +5,17 @@ import type { Projet } from "../lib/projets";
 interface Props {
   projets: Projet[];
   headingLevel?: 2 | 3;
+  /** Nombre de premières vignettes chargées tout de suite (proches du haut de page). */
+  eager?: number;
 }
 
-const { projets, headingLevel = 3 } = Astro.props;
+const { projets, headingLevel = 3, eager = 0 } = Astro.props;
 ---
 
 <div class="mosaic">
   {
     projets.map((projet, i) => (
-      <ProjectCard projet={projet} index={i} total={projets.length} headingLevel={headingLevel} />
+      <ProjectCard projet={projet} index={i} headingLevel={headingLevel} eager={i < eager} />
     ))
   }
 </div>

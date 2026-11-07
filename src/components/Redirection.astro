@@ -1,0 +1,33 @@
+---
+/**
+ * Ancienne adresse conservée : redirige immédiatement vers la nouvelle
+ * (balise meta refresh, seule redirection possible sur GitHub Pages),
+ * avec un lien visible si la redirection automatique ne se fait pas.
+ */
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+interface Props {
+  titre: string;
+  vers: string;
+  libelle: string;
+}
+
+const { titre, vers, libelle } = Astro.props;
+---
+
+<BaseLayout title={titre} description={`Cette page a déménagé : ${libelle}.`} redirectTo={vers}>
+  <div class="wrap page">
+    <h1 class="redirection__title">{titre}</h1>
+    <p class="redirection__text">
+      Cette page a déménagé : <a class="link-arrow" href={vers}>{libelle}</a>
+    </p>
+  </div>
+</BaseLayout>
+
+<style>
+  .redirection__title {
+    font-size: clamp(3rem, 1.25rem + 9vw, 10rem);
+    line-height: 0.82;
+    margin-bottom: 2rem;
+  }
+</style>

@@ -1,12 +1,15 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Hero from "../components/Hero.astro";
-import ProjectMosaic from "../components/ProjectMosaic.astro";
+import UniversCard from "../components/UniversCard.astro";
 import { site } from "../config/site";
-import { getProjetsPublies } from "../lib/projets";
+import { univers } from "../config/univers";
+import { largeurEm } from "../lib/anton";
 
-const projets = await getProjetsPublies();
-const total = String(projets.length).padStart(2, "0");
+/** Titre d'univers le plus long (em, +2 % de marge) : taille commune des cartes. */
+const motEm = Math.max(...univers.map((u) => largeurEm(u.titre))) * 1.02;
+
+const total = String(univers.length).padStart(2, "0");
 
 /** Données structurées Person minimales : ni adresse, ni téléphone. */
 const liens: Array<string | null> = [site.links.github, site.links.linkedin];
@@ -21,23 +24,24 @@ const person = {
 };
 ---
 
-<BaseLayout description={`${site.name}, ${site.role}, région de ${site.location}. CV, projets et contact.`}>
+<BaseLayout
+  description={`Bienvenue dans l'univers de ${site.name} : ${site.presentation.toLowerCase()}. Parcours professionnel, jeux favoris et contact.`}
+>
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(person)} />
   <Hero />
 
-  <section class="home-projects" aria-labelledby="titre-projets">
+  <section class="home-univers" aria-labelledby="titre-univers">
     <div class="wrap">
       <header class="section-head">
-        <h2 class="section-title" id="titre-projets">Projets</h2>
+        <h2 class="section-title" id="titre-univers">Univers</h2>
         <p class="section-count">
           <span class="section-count__n">{total}</span>
-          <span class="label">{projets.length > 1 ? "projets publiés" : "projet publié"}</span>
+          <span class="label">univers</span>
         </p>
       </header>
-      <ProjectMosaic projets={projets} headingLevel={3} />
-      <p class="home-projects__all">
-        <a class="link-arrow" href="/projets/">Tous les projets</a>
-      </p>
+      <div class="univers">
+        {univers.map((u, i) => <UniversCard univers={u} index={i} motEm={motEm} />)}
+      </div>
     </div>
   </section>
 
@@ -56,13 +60,21 @@ const person = {
 </BaseLayout>
 
 <style>
-  .home-projects {
+  .home-univers {
     padding-block: clamp(3rem, 8vw, 7rem);
     border-top: var(--rule);
   }
 
-  .home-projects__all {
-    margin: clamp(3rem, 7vw, 6rem) 0 0;
+  /* Univers à égalité : même largeur, même proportion */
+  .univers {
+    display: grid;
+    gap: clamp(3rem, 7vw, 6rem) clamp(1rem, 3vw, 2.5rem);
+  }
+
+  @media (min-width: 48rem) {
+    .univers {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 
   /* Bloc contact : grand aplat bordeaux */

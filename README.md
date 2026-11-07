@@ -110,6 +110,7 @@ coupée par la variable `ASTRO_TELEMETRY_DISABLED=1` du workflow.
 | `npm run clean:pdf -- <original.pdf> <destination.pdf>` | retire les métadonnées et le contenu caché d'un PDF |
 | `npm run prepare:photo -- <original.png> [--flip]` | prépare le portrait (noir et blanc, grain, sans métadonnées) |
 | `npm run generate:images` | régénère l'image de partage et les icônes à partir de `site.ts` |
+| `npm run steam:fetch` | met à jour les données Steam (`.steam/`, hors Git) si la variable `STEAM_API_KEY` est définie |
 
 **Avant chaque publication** : `npm run verify` puis `npm run check:launch` doivent réussir.
 GitHub Actions refait exactement ces contrôles et ne publie rien en cas d'échec.
@@ -125,6 +126,96 @@ npm run dev
 ```
 
 Puis ouvrir http://localhost:4321. `Ctrl + C` dans le terminal arrête le serveur.
+
+### Organisation du site
+
+| Page | Contenu |
+|---|---|
+| `/` | héros (nom, portrait, présentation) et univers du site |
+| `/pro/` | métier, région, disponibilité, CV, projets (`#projets`) et parcours (`#parcours`) |
+| `/jeux/` | jeux favoris, données Steam (si disponibles), liens Steam et Medal |
+| `/projets/<projet>/` | page détaillée d'un projet |
+| `/contact/` | adresse e-mail, CV, liens |
+
+Les anciennes adresses `/projets/` et `/parcours/` redirigent vers les sections de `/pro/`.
+GitHub Pages ne permet pas de redirection HTTP (301) : la redirection se fait dans la page, qui n'est
+pas indexée et n'apparaît pas dans le sitemap.
+
+### Modifier la présentation de l'accueil
+
+`presentation` dans `src/config/site.ts` : elle sert au titre de la page d'accueil et au héros
+(suivie de « Bienvenue dans mon univers. »). Le métier (`role`) reste affiché sur la page Pro.
+
+### Ajouter un univers (Sport, Musique, Loisirs…)
+
+1. Créer la page `src/pages/<slug>.astro` (par exemple en partant de `src/pages/jeux.astro`).
+2. Ajouter une entrée dans `src/config/univers.ts` : `slug`, `titre`, `resume`.
+3. Le menu et l'accueil se mettent à jour seuls. Ajouter la page aux listes de pages des tests
+   (`tests/helpers.ts` et `tests/qualite.spec.ts`), puis `npm run verify`.
+
+### Modifier les jeux favoris
+
+Tout se trouve dans `src/data/jeux.ts`. Seul `titre` est obligatoire ; un champ vide (`""`) ou absent
+n'est pas affiché :
+
+```ts
+{ titre: "Rainbow Six Siege", plateforme: "PC", niveau: "Or III", texte: "Une phrase.", image: "r6-capture.png", imageAlt: "Description de la capture" },
+```
+
+- `image` : nom d'une de **tes propres captures**, placée dans `src/assets/jeux/` (sans métadonnées).
+  Jamais de logo ni de jaquette officielle. Sans image, une pochette typographique est générée.
+- `imageAlt` est obligatoire dès qu'il y a une image.
+- `npm run check` vérifie le fichier et l'existence des images.
+
+### Données Steam
+
+Les jeux possédés, le temps de jeu et les jeux récents sont lus **pendant la génération du site**
+(jamais dans le navigateur des visiteurs), uniquement si le profil Steam est public. Rien d'autre
+n'est enregistré : ni pseudo, ni avatar, ni statut en ligne, ni jeu en cours, ni pays.
+
+**Mise en route (plus tard, quand tu le décides)** :
+
+1. Obtenir une clé sur https://steamcommunity.com/dev/apikey (connecté à Steam ; domaine :
+   `portfolio.cardamone-online.ch`). La clé est **personnelle et confidentielle** (conditions de Steam).
+2. GitHub → dépôt `portfolio` → **Settings → Secrets and variables → Actions → New repository secret** :
+   nom `STEAM_API_KEY`, valeur : la clé. Ne jamais l'écrire dans un fichier du projet.
+3. Onglet **Actions** → « Vérifier et publier » → **Run workflow** pour une première mise à jour.
+
+En local, pour tester, sans enregistrer la clé (Windows PowerShell 5.1 ; la saisie est masquée) :
+
+```powershell
+$s = Read-Host "Clé Steam" -AsSecureString
+$env:STEAM_API_KEY = [Runtime.InteropServices.Marshal]::PtrToStringBSTR([Runtime.InteropServices.Marshal]::SecureStringToBSTR($s))
+npm run steam:fetch
+npm run build
+Remove-Item Env:STEAM_API_KEY; Remove-Variable s
+```
+
+Sur Fedora : `read -rs STEAM_API_KEY && export STEAM_API_KEY && npm run steam:fetch && npm run build; unset STEAM_API_KEY`
+(non testé, voir section 1).
+
+**Fonctionnement et limites** :
+
+- le workflow tourne **chaque jour vers 6 h – 7 h** (heure de Lausanne) et à chaque push ;
+- si la clé manque ou si Steam ne répond pas, les **dernières données valides** sont reprises du cache de
+  GitHub Actions ; sans données, la section Steam est simplement masquée. Le site reste publiable ;
+- si le profil (ou le détail des jeux) devient privé, les données sont supprimées et la section disparaît ;
+- GitHub peut **retarder** une exécution planifiée et la **désactive après 60 jours sans activité** sur le
+  dépôt (un e-mail prévient ; il suffit de la réactiver dans l'onglet Actions) ;
+- le cache de GitHub est effacé après **7 jours sans utilisation** : après une longue pause, les données
+  reviennent à la prochaine exécution réussie ;
+- les **forks** du dépôt ne reçoivent jamais le secret ;
+- limite de Steam : 100 000 appels par jour (le site en fait 4 par exécution) ;
+- la mention « ce site n'est ni affilié à Valve ni approuvé par Valve » accompagne les données, comme
+  l'exigent les conditions d'utilisation de l'API Steam.
+
+`check:privacy` refuse toute chaîne au format d'une clé Steam et, dans GitHub Actions, vérifie que la
+vraie clé n'apparaît dans aucun fichier du projet, du site généré ou des données Steam.
+
+### Clips Medal
+
+Le lien `jeux.medal` de `src/config/site.ts` s'affiche comme simple lien externe. Aucun lecteur
+vidéo n'est intégré : rien n'est chargé depuis Medal ou Steam tant que le visiteur ne clique pas.
 
 ### Ajouter un projet
 
@@ -220,7 +311,7 @@ links: {
 },
 ```
 
-Les liens apparaissent automatiquement sur l'accueil, la page Contact et les données structurées.
+Les liens apparaissent automatiquement sur la page Contact et dans les données structurées de l'accueil.
 
 ---
 
@@ -353,13 +444,16 @@ documentation GitHub conseille **Remove** puis de ressaisir le domaine et **Save
 
 ## 6. Publications suivantes
 
-Chaque `git push` sur `main` (ou **Push origin** dans GitHub Desktop) relance le workflow
-`.github/workflows/deploy.yml` :
+Chaque `git push` sur `main` (ou **Push origin** dans GitHub Desktop), ainsi qu'une exécution
+quotidienne, relancent le workflow `.github/workflows/deploy.yml` :
 
 1. installation exacte avec `npm ci` ;
 2. installation de Chromium et Firefox pour les tests ;
-3. `npm run verify` ;
-4. `npm run check:launch` ;
-5. publication sur GitHub Pages **uniquement si tout a réussi**.
+3. données Steam : reprise des dernières données valides, puis mise à jour (seule étape, avec la
+   vérification finale, à recevoir le secret `STEAM_API_KEY`) ;
+4. `npm run verify` ;
+5. `npm run check:launch` ;
+6. vérification que la clé Steam n'apparaît nulle part ;
+7. publication sur GitHub Pages **uniquement si tout a réussi**.
 
 En cas d'échec, l'ancienne version reste en ligne. Le détail de l'erreur se trouve dans l'onglet **Actions**.

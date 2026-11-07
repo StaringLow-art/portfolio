@@ -1,0 +1,380 @@
+---
+import type { ImageMetadata } from "astro";
+import { Image } from "astro:assets";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { site } from "../config/site";
+import { favoris } from "../data/jeux";
+import { rang } from "../lib/projets";
+import { dateLongue, duree, lireSteam } from "../lib/steam";
+
+/** Captures personnelles éventuelles (src/assets/jeux/). */
+const images = import.meta.glob<{ default: ImageMetadata }>("../assets/jeux/*.{png,jpg,jpeg,webp}", { eager: true });
+const imageDe = (nom: string) => {
+  if (!nom) return null;
+  const trouvee = images[`../assets/jeux/${nom}`];
+  if (!trouvee) throw new Error(`Image de jeu introuvable : src/assets/jeux/${nom}`);
+  return trouvee.default;
+};
+
+const jeux = favoris.map((jeu) => ({ ...jeu, src: imageDe(jeu.image) }));
+const total = String(jeux.length).padStart(2, "0");
+
+/** Données Steam lues pendant la génération ; null = section masquée. */
+const steam = lireSteam();
+const TOP = 10;
+
+/** Liens externes simples (aucun lecteur ni contenu intégré). */
+const liens: Array<{ label: string; href: string }> = [];
+if (site.jeux.steam) liens.push({ label: "Profil Steam", href: site.jeux.steam });
+if (site.jeux.medal) liens.push({ label: "Clips sur Medal", href: site.jeux.medal });
+---
+
+<BaseLayout title="Jeux" description={`Les jeux favoris de ${site.name}, sa bibliothèque Steam et ses clips.`}>
+  <div class="wrap page jeux">
+    <header class="section-head">
+      <h1 class="section-title">Jeux</h1>
+      <p class="section-count">
+        <span class="section-count__n">{total}</span>
+        <span class="label">{jeux.length > 1 ? "favoris" : "favori"}</span>
+      </p>
+    </header>
+
+    <section aria-labelledby="titre-favoris">
+      <h2 class="label jeux__soustitre" id="titre-favoris">Favoris</h2>
+      <ol class="favoris" role="list">
+        {
+          jeux.map((jeu, i) => (
+            <li class="jeu">
+              <div class="jeu__frame crop-marks">
+                {jeu.src ? (
+                  <div class="jeu__media">
+                    <Image src={jeu.src} alt={jeu.imageAlt} widths={[480, 720, 960]} sizes="(min-width: 64rem) 30vw, (min-width: 40rem) 45vw, 100vw" loading="lazy" format="webp" quality={85} />
+                  </div>
+                ) : (
+                  // Pochette typographique : le numéro et le titre (affiché une seule fois)
+                  <div class:list={["jeu__visuel", i % 2 === 0 ? "jeu__visuel--encre" : "jeu__visuel--bordeaux grain-slab"]}>
+                    <p class="jeu__num">{rang(i)}</p>
+                    <h3 class="jeu__titre">{jeu.titre}</h3>
+                  </div>
+                )}
+              </div>
+              {/* Légende : seulement s'il y a quelque chose à afficher */}
+              {(jeu.src || jeu.plateforme || jeu.niveau || jeu.texte) && (
+                <div class="jeu__caption">
+                  {jeu.src && (
+                    <>
+                      <p class="jeu__num jeu__num--legende">{rang(i)}</p>
+                      <h3 class="jeu__titre jeu__titre--legende">{jeu.titre}</h3>
+                    </>
+                  )}
+                  {(jeu.plateforme || jeu.niveau) && (
+                    <dl class="jeu__infos">
+                      {jeu.plateforme && (
+                        <div>
+                          <dt class="label">Plateforme</dt>
+                          <dd>{jeu.plateforme}</dd>
+                        </div>
+                      )}
+                      {jeu.niveau && (
+                        <div>
+                          <dt class="label">Niveau</dt>
+                          <dd>{jeu.niveau}</dd>
+                        </div>
+                      )}
+                    </dl>
+                  )}
+                  {jeu.texte && <p class="jeu__texte">{jeu.texte}</p>}
+                </div>
+              )}
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+
+    {
+      steam && (
+        <section class="steam" aria-labelledby="titre-steam" data-steam>
+          <header class="section-head">
+            <h2 class="section-title" id="titre-steam">Steam</h2>
+            <p class="section-count">
+              <span class="section-count__n">{steam.jeuxPossedes}</span>
+              <span class="label">{steam.jeuxPossedes > 1 ? "jeux possédés" : "jeu possédé"}</span>
+            </p>
+          </header>
+
+          <p class="steam__total">
+            <span class="label">Temps de jeu total</span>
+            <span class="steam__total-n">{duree(steam.minutesTotal)}</span>
+          </p>
+
+          <div class="steam__listes">
+            {steam.plusJoues.length > 0 && (
+              <section aria-labelledby="titre-plus-joues">
+                <h3 class="steam__liste-titre" id="titre-plus-joues">Les plus joués</h3>
+                <ol class="steam__liste" role="list">
+                  {steam.plusJoues.slice(0, TOP).map((jeu) => (
+                    <li>
+                      <span class="steam__nom">{jeu.nom}</span>
+                      <span class="steam__duree">{duree(jeu.minutes)}</span>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
+            {steam.recents.length > 0 && (
+              <section aria-labelledby="titre-recents">
+                <h3 class="steam__liste-titre" id="titre-recents">Ces deux dernières semaines</h3>
+                <ol class="steam__liste" role="list">
+                  {steam.recents.map((jeu) => (
+                    <li>
+                      <span class="steam__nom">{jeu.nom}</span>
+                      <span class="steam__duree">{duree(jeu.minutes2Semaines)}</span>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
+          </div>
+
+          <p class="steam__source">
+            Données publiques de mon profil Steam, mises à jour le {dateLongue(steam.misAJour)}. Steam est une marque de
+            Valve Corporation ; ce site n'est ni affilié à Valve ni approuvé par Valve.
+          </p>
+        </section>
+      )
+    }
+
+    {
+      liens.length > 0 && (
+        <section class="jeux__liens" aria-labelledby="titre-liens-jeux">
+          <h2 class="jeux__liens-titre" id="titre-liens-jeux">
+            Ailleurs
+          </h2>
+          <ul class="jeux__liste-liens" role="list">
+            {liens.map((lien) => (
+              <li>
+                <a class="link-arrow" href={lien.href} rel="me noopener">
+                  {lien.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+          <p class="jeux__note">Liens vers des sites externes : rien n'est chargé depuis ces sites tant que vous ne cliquez pas.</p>
+        </section>
+      )
+    }
+  </div>
+</BaseLayout>
+
+<style>
+  .jeux__soustitre {
+    margin-bottom: clamp(1.5rem, 4vw, 2.5rem);
+  }
+
+  /* ============ Favoris : grille de pochettes typographiques ============ */
+  .favoris {
+    display: grid;
+    gap: clamp(2.5rem, 6vw, 4.5rem) clamp(1rem, 3vw, 2.5rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @media (min-width: 40rem) {
+    .favoris {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .favoris {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  .jeu {
+    display: grid;
+    align-content: start;
+    gap: 1.1rem;
+  }
+
+  /* Carré : hauteur égale à la largeur */
+  .jeu__visuel,
+  .jeu__media {
+    aspect-ratio: 1 / 1;
+  }
+
+  .jeu__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Le cadre sert de référence aux unités cqi de la pochette */
+  .jeu__frame {
+    container-type: inline-size;
+  }
+
+  /* Pochette : numéro en haut, titre en capitales en bas */
+  .jeu__visuel {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 7cqi;
+    overflow: hidden;
+  }
+
+  .jeu__visuel--encre {
+    background: var(--c-fg);
+    color: var(--c-bg);
+  }
+
+  .jeu__visuel--bordeaux {
+    color: var(--c-on-slab);
+  }
+
+  /* Numéro et titre dans la pochette, à la couleur de la pochette */
+  .jeu__num {
+    margin: 0;
+    font-family: var(--font-display-stack);
+    font-size: 9cqi;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .jeu__titre {
+    font-size: 11.5cqi;
+    line-height: var(--lh-title);
+    overflow-wrap: normal;
+  }
+
+  /* Variante sous une capture personnelle (légende) */
+  .jeu__num--legende {
+    font-size: clamp(1.25rem, 1rem + 1vw, 1.75rem);
+    line-height: 0.95;
+    color: var(--c-mark);
+  }
+
+  .jeu__titre--legende {
+    font-size: clamp(1.5rem, 1.2rem + 1vw, 2.1rem);
+  }
+
+  .jeu__caption {
+    display: grid;
+    gap: 0.35rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--c-fg);
+  }
+
+  .jeu__infos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    margin: 0.25rem 0 0;
+  }
+
+  .jeu__infos dd {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .jeu__texte {
+    max-width: 52ch;
+    margin: 0.25rem 0 0;
+  }
+
+  /* ============ Steam ============ */
+  .steam {
+    margin-top: clamp(4rem, 9vw, 7rem);
+  }
+
+  .steam__total {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0 0 clamp(2rem, 5vw, 3rem);
+  }
+
+  .steam__total-n {
+    font-family: var(--font-display-stack);
+    font-size: clamp(2.5rem, 1.5rem + 4vw, 5rem);
+    line-height: 0.9;
+    color: var(--c-mark);
+  }
+
+  .steam__listes {
+    display: grid;
+    gap: clamp(2rem, 5vw, 3rem) clamp(2rem, 5vw, 5rem);
+  }
+
+  @media (min-width: 64rem) {
+    .steam__listes {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .steam__liste-titre {
+    margin-bottom: 1rem;
+    font-size: clamp(1.6rem, 1.2rem + 1.5vw, 2.4rem);
+    line-height: var(--lh-title);
+  }
+
+  .steam__liste {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: var(--rule);
+  }
+
+  .steam__liste li {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    padding-block: 0.6rem;
+    border-bottom: 1px solid var(--c-fg);
+  }
+
+  .steam__nom {
+    font-weight: 600;
+    min-width: 0;
+  }
+
+  .steam__duree {
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .steam__source {
+    max-width: 70ch;
+    margin: clamp(1.5rem, 4vw, 2.5rem) 0 0;
+    font-size: 0.875rem;
+  }
+
+  /* ============ Liens externes ============ */
+  .jeux__liens {
+    margin-top: clamp(4rem, 9vw, 7rem);
+    padding-top: 1rem;
+    border-top: var(--rule);
+  }
+
+  .jeux__liens-titre {
+    margin-bottom: 1.25rem;
+    font-size: clamp(1.8rem, 1.3rem + 2vw, 2.75rem);
+  }
+
+  .jeux__liste-liens {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 2rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .jeux__note {
+    max-width: 70ch;
+    margin: 1.5rem 0 0;
+    font-size: 0.875rem;
+  }
+</style>

@@ -80,7 +80,7 @@ for (const viewport of [
   { width: 1440, height: 900 },
   { width: 375, height: 812 },
 ]) {
-  test.describe(`/projets à ${viewport.width} px : une image visible ne redevient jamais cachée`, () => {
+  test.describe(`/pro à ${viewport.width} px : une image visible ne redevient jamais cachée`, () => {
     test.use({ viewport });
     test.setTimeout(45_000);
 
@@ -88,34 +88,36 @@ for (const viewport of [
       await page.addInitScript(MONITOR);
     });
 
+    // « PROFESSIONNEL » repousse les projets sous le premier écran : arrivée sur
+    // /pro/#projets (redirection de l'ancienne page /projets/, lien « Tous les projets »)
     test("arrivée directe", async ({ page }) => {
-      await page.goto("/projets/");
+      await page.goto("/pro/#projets");
       await expectNeverRehidden(page);
     });
 
     test("rechargement", async ({ page }) => {
-      await page.goto("/projets/");
+      await page.goto("/pro/#projets");
       await page.waitForTimeout(1500);
       await page.reload();
       await expectNeverRehidden(page);
     });
 
     test("navigation depuis une autre page", async ({ page }) => {
-      await page.goto("/parcours/");
-      await page.getByRole("navigation", { name: "Navigation principale" }).getByRole("link", { name: "Projets" }).click();
-      await expect(page).toHaveURL(/\/projets\/$/);
+      await page.goto("/projets/homelab/");
+      await page.getByRole("link", { name: "Tous les projets" }).click();
+      await expect(page).toHaveURL(/\/pro\/#projets$/);
       await expectNeverRehidden(page);
     });
 
     test("retour arrière", async ({ page }) => {
-      await page.goto("/projets/");
+      await page.goto("/pro/#projets");
       await page.waitForTimeout(1500);
       await page.locator(".card__title a").first().click();
       await expect(page).toHaveURL(/\/projets\/homelab\/$/);
       await page.waitForTimeout(500);
       // « commit » : une page restaurée depuis le bfcache ne déclenche pas « load »
       await page.goBack({ waitUntil: "commit" });
-      await expect(page).toHaveURL(/\/projets\/$/);
+      await expect(page).toHaveURL(/\/pro\/#projets$/);
       await expectNeverRehidden(page);
     });
   });

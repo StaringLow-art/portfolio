@@ -2,8 +2,14 @@ import type { Page } from "@playwright/test";
 
 export const SITE_ORIGIN = "http://localhost:4321";
 
-/** Pages publiques à tester. Complétée automatiquement avec les projets en phase 4. */
-export const PAGES = ["/", "/projets/", "/projets/homelab/", "/projets/projet-cfc/", "/parcours/", "/contact/"];
+/** Pages publiques à tester. */
+export const PAGES = ["/", "/pro/", "/jeux/", "/projets/homelab/", "/projets/projet-cfc/", "/contact/"];
+
+/** Anciennes adresses, redirigées vers une section de la page Pro. */
+export const ANCIENNES_ADRESSES = [
+  { from: "/projets/", to: "/pro/#projets", section: "#projets" },
+  { from: "/parcours/", to: "/pro/#parcours", section: "#parcours" },
+] as const;
 
 /**
  * Enregistre les erreurs console et les requêtes vers un autre domaine.

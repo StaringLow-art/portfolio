@@ -1,19 +1,20 @@
 ---
 import Logo from "./Logo.astro";
 import ThemeToggle from "./ThemeToggle.astro";
+import { univers } from "../config/univers";
 
 const path = Astro.url.pathname;
+/** Menu : Accueil, chaque univers (config/univers.ts), puis Contact. */
 const items = [
-  { href: "/", label: "Accueil" },
-  { href: "/projets/", label: "Projets" },
-  { href: "/parcours/", label: "Parcours" },
-  { href: "/contact/", label: "Contact" },
+  { href: "/", label: "Accueil", sousPages: [] as string[] },
+  ...univers.map((u) => ({ href: `/${u.slug}/`, label: u.menu ?? u.titre, sousPages: u.sousPages ?? [] })),
+  { href: "/contact/", label: "Contact", sousPages: [] as string[] },
 ];
 
-/** "page" sur la page exacte, "true" dans une sous-page (ex. un projet). */
-function ariaCurrent(href: string): "page" | "true" | undefined {
+/** "page" sur la page exacte, "true" dans une sous-page (ex. un projet pour Pro). */
+function ariaCurrent(href: string, sousPages: string[]): "page" | "true" | undefined {
   if (path === href) return "page";
-  if (href !== "/" && path.startsWith(href)) return "true";
+  if (href !== "/" && [href, ...sousPages].some((p) => path.startsWith(p))) return "true";
   return undefined;
 }
 ---
@@ -28,7 +29,7 @@ function ariaCurrent(href: string): "page" | "true" | undefined {
         {
           items.map((item) => (
             <li>
-              <a href={item.href} aria-current={ariaCurrent(item.href)}>
+              <a href={item.href} aria-current={ariaCurrent(item.href, item.sousPages)}>
                 {item.label}
               </a>
             </li>

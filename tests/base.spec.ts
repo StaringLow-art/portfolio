@@ -20,7 +20,7 @@ for (const url of PAGES) {
 test("Moto Passion (draft) n'est ni publié, ni dans le sitemap, ni dans dist/", async ({ page, request }) => {
   const response = await page.goto("/projets/moto-passion/");
   expect(response?.status()).toBe(404);
-  await page.goto("/projets/");
+  await page.goto("/pro/");
   await expect(page.getByText("Moto Passion")).toHaveCount(0);
 
   const sitemap = await (await request.get("/sitemap-0.xml")).text();
@@ -32,9 +32,9 @@ test("Moto Passion (draft) n'est ni publié, ni dans le sitemap, ni dans dist/",
 });
 
 test("la navigation indique la page active", async ({ page }) => {
-  await page.goto("/parcours/");
+  await page.goto("/jeux/");
   const nav = page.getByRole("navigation", { name: "Navigation principale" });
-  await expect(nav.getByRole("link", { name: "Parcours" })).toHaveAttribute("aria-current", "page");
+  await expect(nav.getByRole("link", { name: "Jeux" })).toHaveAttribute("aria-current", "page");
   await expect(nav.getByRole("link", { name: "Accueil" })).not.toHaveAttribute("aria-current", /.+/);
 });
 

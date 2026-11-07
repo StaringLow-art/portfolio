@@ -28,6 +28,19 @@ try {
   report.fail(`parcours.ts invalide : ${error instanceof Error ? error.message : String(error)}`);
 }
 
+// 2b. Jeux favoris (schéma appliqué à l'import) et images existantes
+try {
+  const { favoris } = await import("../src/data/jeux.ts");
+  for (const jeu of favoris) {
+    if (jeu.image && !existsSync(path.join(ROOT, "src/assets/jeux", jeu.image))) {
+      report.fail(`jeux.ts › « ${jeu.titre} » : image introuvable « src/assets/jeux/${jeu.image} ».`);
+    }
+  }
+  report.ok(`src/data/jeux.ts respecte son schéma (${favoris.length} favoris)`);
+} catch (error) {
+  report.fail(`jeux.ts invalide : ${error instanceof Error ? error.message : String(error)}`);
+}
+
 // 3. Projets
 const PROJETS_DIR = path.join(ROOT, "src/content/projets");
 const FORBIDDEN = /<iframe|<video|<embed|<object|youtube\.com|youtu\.be|vimeo\.com|dailymotion|tiktok\.com|\.(mp4|webm|mov|m4v|avi|mkv)\b/i;

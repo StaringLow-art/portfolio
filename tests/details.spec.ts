@@ -1,9 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
 
 /* ======================================================================
-   1. /projets : les images à l'écran se révèlent vite (< 1,5 s, donc avant
+   1. /pro (projets) : les images à l'écran se révèlent vite (< 1,5 s, donc avant
       la sécurité de 2 s), après chargement, navigation, rechargement
-      et retour arrière.
+      et retour arrière. Le grand titre « PROFESSIONNEL » repousse les projets
+      sous le premier écran : on arrive donc sur /pro/#projets (adresse de
+      redirection de l'ancienne page /projets/ et du lien « Tous les projets »).
    ====================================================================== */
 async function expectOnScreenRevealed(page: Page) {
   const state = () =>
@@ -27,23 +29,23 @@ for (const viewport of [
   { width: 1440, height: 900 },
   { width: 375, height: 812 },
 ]) {
-  test.describe(`/projets à ${viewport.width} px : révélation rapide`, () => {
+  test.describe(`/pro à ${viewport.width} px : révélation rapide`, () => {
     test.use({ viewport });
 
     test("chargement direct", async ({ page }) => {
-      await page.goto("/projets/");
+      await page.goto("/pro/#projets");
       await expectOnScreenRevealed(page);
     });
 
-    test("navigation depuis l'accueil", async ({ page }) => {
-      await page.goto("/");
-      await page.getByRole("navigation", { name: "Navigation principale" }).getByRole("link", { name: "Projets" }).click();
-      await expect(page).toHaveURL(/\/projets\/$/);
+    test("navigation depuis une page de projet", async ({ page }) => {
+      await page.goto("/projets/homelab/");
+      await page.getByRole("link", { name: "Tous les projets" }).click();
+      await expect(page).toHaveURL(/\/pro\/#projets$/);
       await expectOnScreenRevealed(page);
     });
 
     test("rechargement en milieu de page", async ({ page }) => {
-      await page.goto("/projets/");
+      await page.goto("/pro/");
       await page.locator(".card__media").last().scrollIntoViewIfNeeded();
       await page.waitForTimeout(300);
       await page.reload();
@@ -51,18 +53,18 @@ for (const viewport of [
     });
 
     test("retour arrière depuis un projet", async ({ page }) => {
-      await page.goto("/projets/");
+      await page.goto("/pro/#projets");
       await page.locator(".card__title a").first().click();
       await expect(page).toHaveURL(/\/projets\/homelab\/$/);
       await page.goBack();
-      await expect(page).toHaveURL(/\/projets\/$/);
+      await expect(page).toHaveURL(/\/pro\/#projets$/);
       await expectOnScreenRevealed(page);
     });
   });
 }
 
 /* ======================================================================
-   2. /parcours : avec des textes accentués et longs, aucun accent ni cédille
+   2. Parcours (page Pro) : avec des textes accentués et longs, aucun accent ni cédille
       ne touche le texte voisin ; la période est alignée sur le titre.
    ====================================================================== */
 const LONG = {
@@ -74,9 +76,9 @@ const LONG = {
 };
 
 for (const width of [320, 375, 768, 1440]) {
-  test(`/parcours à ${width} px : accents et cédilles ne touchent rien`, async ({ page }) => {
+  test(`parcours (/pro) à ${width} px : accents et cédilles ne touchent rien`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto("/parcours/");
+    await page.goto("/pro/");
     await page.evaluate(() => document.fonts.ready);
     await page.evaluate((t) => {
       document.querySelectorAll(".etape__titre").forEach((e) => (e.textContent = t.titre));
@@ -160,10 +162,10 @@ for (const width of [320, 375, 768, 1440]) {
       #D06F7C réservé aux petits éléments. Thème clair inchangé.
    ====================================================================== */
 const BIG = [
-  ["/projets/", ".section-count__n"],
-  ["/projets/", ".card__num"],
+  ["/pro/", ".section-count__n"],
+  ["/pro/", ".card__num"],
   ["/projets/homelab/", ".projet__num"],
-  ["/parcours/", ".etape__periode"],
+  ["/pro/", ".etape__periode"],
 ] as const;
 
 for (const [scheme, expected] of [

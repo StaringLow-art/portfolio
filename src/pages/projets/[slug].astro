@@ -4,7 +4,8 @@ import { render } from "astro:content";
 import { Image } from "astro:assets";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { site } from "../../config/site";
-import { getProjetsPublies, numero, type Projet } from "../../lib/projets";
+import { getProjetsPublies, rang, type Projet } from "../../lib/projets";
+import { motLePlusLongEm } from "../../lib/anton";
 
 export const getStaticPaths = (async () => {
   const projets = await getProjetsPublies();
@@ -43,8 +44,10 @@ const coverSizes = `(min-width: ${coverNative + 96}px) ${coverNative}px, calc(10
 
 <BaseLayout title={data.title} description={`${data.title} : ${data.summary} Projet de ${site.name}, ${site.role}.`}>
   <article class="projet">
-    <header class="wrap projet__head">
-      <p class="projet__num">{numero(index, total)}</p>
+    <!-- --mot-em : largeur du mot le plus long du titre (+2 % de marge), pour
+         qu'il tienne toujours sur une ligne à côté du numéro -->
+    <header class="wrap projet__head" style={`--mot-em: ${(motLePlusLongEm(data.title) * 1.02).toFixed(3)}`}>
+      <p class="projet__num">{rang(index)}</p>
       <h1 class:list={["projet__title", { "projet__title--long": data.title.length > 18 }]}>{data.title}</h1>
       <p class="projet__summary">{data.summary}</p>
     </header>
@@ -146,11 +149,11 @@ const coverSizes = `(min-width: ${coverNative + 96}px) ${coverNative}px, calc(10
 
     <div class="wrap">
     <nav class="projet__nav" aria-label="Autres projets">
-      <a class="link-arrow" href="/projets/">Tous les projets</a>
+      <a class="link-arrow" href="/pro/#projets">Tous les projets</a>
       {
         aSuivant && (
           <a class="projet__next" href={`/projets/${suivant.id}/`}>
-            <span class="label">Projet suivant · {numero(indexSuivant, total)}</span>
+            <span class="label">Projet suivant · {rang(indexSuivant)}</span>
             <span class="projet__next-title">{suivant.data.title}</span>
           </a>
         )
@@ -166,24 +169,42 @@ const coverSizes = `(min-width: ${coverNative + 96}px) ${coverNative}px, calc(10
   }
 
   /* ============ En-tête : numéro de piste + grand titre ============ */
+  /* En-tête : numéro à gauche du titre ; la suite du titre et le résumé
+     s'alignent sous le début du titre. */
   .projet__head {
+    --fn: clamp(1.75rem, 1rem + 2.5vw, 3rem);
+    --gap: 0.75rem;
+    --ft-base: clamp(2rem, 0.6rem + 7vw, 8rem);
+    /* Le mot le plus long tient toujours sur une ligne, à côté du numéro
+       (largeur du numéro « 01 » à « 99 » : au plus 1 em) */
+    --ft: min(var(--ft-base), calc((100cqi - var(--fn) - var(--gap)) / var(--mot-em)));
+    container-type: inline-size;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    column-gap: var(--gap);
     padding-top: clamp(2.5rem, 6vw, 5rem);
   }
 
+  /* Haut des chiffres aligné sur le haut des capitales du titre (métriques
+     d'Anton, src/lib/anton.ts) : titre 0,1745 × taille + 1 px ; numéro
+     (interligne 1) 0,0645 × taille. */
   .projet__num {
-    margin-bottom: 0.75rem;
+    grid-column: 1;
+    grid-row: 1;
+    margin: calc(0.1745 * var(--ft) + 1px - 0.0645 * var(--fn)) 0 0;
     font-family: var(--font-display-stack);
-    font-size: clamp(1.75rem, 1rem + 2.5vw, 3rem);
+    font-size: var(--fn);
     line-height: 1;
     color: var(--c-mark);
+    white-space: nowrap;
   }
 
-  /* Taille calculée pour que le mot le plus long (« D'INFRASTRUCTURE »,
-     ≈ 7,7 em en Anton) tienne entier sur une ligne dès 320 px.
-     Aucune césure : un mot n'est jamais coupé (vérifié par les tests). */
+  /* Aucune césure : un mot n'est jamais coupé (vérifié par les tests). */
   .projet__title {
+    grid-column: 2;
     max-width: 11em;
-    font-size: clamp(2rem, 0.6rem + 7vw, 8rem);
+    font-size: var(--ft);
     line-height: var(--lh-title);
   }
 
@@ -191,13 +212,17 @@ const coverSizes = `(min-width: ${coverNative + 96}px) ${coverNative}px, calc(10
      grande (deux lignes au lieu de trois), pour que le titre et le résumé
      laissent voir le début de la fiche dès le premier écran. */
   @media (min-width: 64rem) {
+    .projet__head:has(.projet__title--long) {
+      --ft-base: min(calc(0.75 * (0.6rem + 7vw)), 6rem);
+    }
+
     .projet__title--long {
       max-width: 15em;
-      font-size: min(calc(0.75 * (0.6rem + 7vw)), 6rem);
     }
   }
 
   .projet__summary {
+    grid-column: 2;
     max-width: 40ch;
     margin: clamp(1.25rem, 3vw, 2rem) 0 0;
     font-size: clamp(1.15rem, 1rem + 0.8vw, 1.6rem);
