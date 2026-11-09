@@ -28,6 +28,10 @@ const person = {
   description={`Bienvenue dans l'univers de ${site.name} : ${site.presentation.toLowerCase()}. Parcours professionnel, jeux favoris et contact.`}
 >
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(person)} />
+  <!-- Bannière temporaire : à retirer quand le site sera terminé -->
+  <p class="chantier on-slab grain-slab" role="note">
+    <span class="wrap chantier__texte">Site en cours de développement</span>
+  </p>
   <Hero />
 
   <section class="home-univers" aria-labelledby="titre-univers">
@@ -60,6 +64,21 @@ const person = {
 </BaseLayout>
 
 <style>
+  /* Bannière « Site en cours de développement » : bandeau bordeaux sous le menu */
+  .chantier {
+    margin: 0;
+    padding-block: 0.6rem;
+  }
+
+  .chantier__texte {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    line-height: 1.4;
+    text-transform: uppercase;
+  }
+
   .home-univers {
     padding-block: clamp(3rem, 8vw, 7rem);
     border-top: var(--rule);

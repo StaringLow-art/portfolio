@@ -235,6 +235,34 @@ test.describe("accueil", () => {
     });
   }
 
+  test("bannière « Site en cours de développement » : sur l'accueil seulement, visible, sans débordement", async ({ page }) => {
+    for (const width of [320, 375, 1440, 2560]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/");
+      const banniere = page.locator(".chantier");
+      await expect(banniere).toBeVisible();
+      await expect(banniere).toHaveText("Site en cours de développement");
+      // Juste sous le menu, sur toute la largeur, texte aligné sur la marge du logo
+      const g = await page.evaluate(() => {
+        const b = document.querySelector(".chantier")!.getBoundingClientRect();
+        const menu = document.querySelector(".site-header")!.getBoundingClientRect();
+        const range = document.createRange();
+        range.selectNodeContents(document.querySelector(".chantier__texte")!);
+        const texte = range.getClientRects()[0]!;
+        const logo = document.querySelector(".logo")!.getBoundingClientRect();
+        return { haut: b.top, basMenu: menu.bottom, largeur: b.width, vw: document.documentElement.clientWidth, texte: texte.left, logo: logo.left, scroll: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+      });
+      expect(Math.abs(g.haut - g.basMenu), `${width} px : sous le menu`).toBeLessThanOrEqual(1);
+      expect(g.largeur, `${width} px : pleine largeur`).toBe(g.vw);
+      expect(Math.abs(g.texte - g.logo), `${width} px : aligné sur le logo`).toBeLessThanOrEqual(4);
+      expect(g.scroll).toBe(0);
+    }
+    for (const url of ["/pro/", "/jeux/", "/contact/"]) {
+      await page.goto(url);
+      await expect(page.locator(".chantier"), url).toHaveCount(0);
+    }
+  });
+
   test("titre et description présentent toute la personnalité", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveTitle("Ryan Cardamone — Informaticien, pilote, gamer et passionné de musique");
