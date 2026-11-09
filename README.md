@@ -111,6 +111,7 @@ coupée par la variable `ASTRO_TELEMETRY_DISABLED=1` du workflow.
 | `npm run prepare:photo -- <original.png> [--flip]` | prépare le portrait (noir et blanc, grain, sans métadonnées) |
 | `npm run generate:images` | régénère l'image de partage et les icônes à partir de `site.ts` |
 | `npm run steam:fetch` | met à jour les données Steam (`.steam/`, hors Git) si la variable `STEAM_API_KEY` est définie |
+| `npm run clean:image -- <original> <destination>` | prépare une photo : redressée, 2400 px au plus, **sans métadonnées ni GPS** |
 
 **Avant chaque publication** : `npm run verify` puis `npm run check:launch` doivent réussir.
 GitHub Actions refait exactement ces contrôles et ne publie rien en cas d'échec.
@@ -134,6 +135,8 @@ Puis ouvrir http://localhost:4321. `Ctrl + C` dans le terminal arrête le serveu
 | `/` | héros (nom, portrait, présentation) et univers du site |
 | `/pro/` | métier, région, disponibilité, CV, projets (`#projets`) et parcours (`#parcours`) |
 | `/jeux/` | jeux favoris, données Steam (si disponibles), liens Steam et Medal |
+| `/sport/` | carnet de bord de karting : pourquoi le karting, calendrier, courses |
+| `/sport/<course>/` | page d'une course : fiche, récit, photos, liens vidéo |
 | `/projets/<projet>/` | page détaillée d'un projet |
 | `/contact/` | adresse e-mail, CV, liens |
 
@@ -146,7 +149,7 @@ pas indexée et n'apparaît pas dans le sitemap.
 `presentation` dans `src/config/site.ts` : elle sert au titre de la page d'accueil et au héros
 (suivie de « Bienvenue dans mon univers. »). Le métier (`role`) reste affiché sur la page Pro.
 
-### Ajouter un univers (Sport, Musique, Loisirs…)
+### Ajouter un univers (Musique, Loisirs…)
 
 1. Créer la page `src/pages/<slug>.astro` (par exemple en partant de `src/pages/jeux.astro`).
 2. Ajouter une entrée dans `src/config/univers.ts` : `slug`, `titre`, `resume`.
@@ -211,6 +214,87 @@ Sur Fedora : `read -rs STEAM_API_KEY && export STEAM_API_KEY && npm run steam:fe
 
 `check:privacy` refuse toute chaîne au format d'une clé Steam et, dans GitHub Actions, vérifie que la
 vraie clé n'apparaît dans aucun fichier du projet, du site généré ou des données Steam.
+
+### Sport (karting)
+
+L'univers Sport est un carnet de bord. Il serait entièrement masqué (ni page, ni menu, ni carte sur
+l'accueil, ni sitemap) si `src/content/sport/introduction.md` était vide ou contenait « À_COMPLÉTER ».
+`npm run check:launch` vérifie cette règle.
+
+| Fichier | Contenu |
+|---|---|
+| `src/content/sport/introduction.md` | texte libre « Pourquoi le karting » (Markdown simple) |
+| `src/data/sport.ts` | calendrier des prochaines courses |
+| `src/content/sport/courses/<course>.md` | une page par course : `/sport/<course>/` |
+
+**Modifier l'introduction** : éditer `introduction.md` (paragraphes, `**gras**`, listes), puis
+`npm run verify`.
+
+**Ajouter une date au calendrier** : dans `src/data/sport.ts` :
+
+```ts
+export const calendrier = calendrierSchema.parse([
+  { date: "2026-12-05", circuit: "Nom du circuit", evenement: "Nom de l'événement" },
+]);
+```
+
+Une date passée disparaît toute seule (le site est régénéré chaque matin). Sans date à venir, la page
+affiche « Aucune course prévue pour le moment ».
+
+**Ajouter une course** :
+
+1. Copier `src/content/sport/courses/course-d-exemple.md` sous un nouveau nom (minuscules et tirets,
+   ex. `sws-6-decembre.md`) : ce nom devient l'adresse `/sport/sws-6-decembre/`. **Retirer la ligne
+   `exemple: true`** et remplacer les photos d'exemple par les tiennes.
+2. Remplir l'en-tête :
+
+   ```markdown
+   ---
+   titre: "SWS – 6 décembre"
+   date: 2026-12-06          # AAAA-MM-JJ, sans guillemets
+   circuit: "Nom du circuit"
+   categorie: "Catégorie"
+   resultat: ""              # facultatif : vide = non affiché
+   photos: []                # facultatif, voir ci-dessous
+   videos: []                # facultatif : [{ titre: "…", url: "https://…" }]
+   draft: false              # true = course masquée
+   ---
+
+   Ton récit de la course.
+   ```
+
+3. `npm run verify`. Les courses sont classées de la plus récente à la plus ancienne.
+
+**Course d'exemple** : `course-d-exemple.md` (avec `exemple: true`) sert de modèle. Elle s'affiche
+**seulement en développement local** (`npm run dev`), avec un bandeau « EXEMPLE ». Elle n'apparaît
+jamais dans le build de production, le sitemap ni le site en ligne (vérifié par les tests et
+`npm run check:launch`). Ses photos d'exemple ne sont pas copiées dans le site généré.
+
+**Ajouter des photos à une course** :
+
+1. Nettoyer chaque photo (orientation, taille, **suppression des métadonnées et du GPS**), sans toucher
+   à l'original :
+
+   ```
+   npm run clean:image -- ../portfolio-sources/karting/IMG_1234.jpg src/assets/sport/sws-6-decembre-1.jpg
+   ```
+
+2. Les déclarer dans la course, avec un texte alternatif (obligatoire) et une légende (facultative) :
+
+   ```yaml
+   photos:
+     - src: "../../../assets/sport/sws-6-decembre-1.jpg"
+       alt: "Mon kart dans le virage du fond"
+       legende: "Qualifications"
+   ```
+
+La page affiche une galerie optimisée ; un clic (ou Entrée au clavier) agrandit la photo, les flèches
+passent à la suivante, Échap ferme. `npm run check:privacy` refuse toute photo qui contient encore des
+métadonnées ou une position GPS. Ne publie une photo où l'on reconnaît d'autres personnes qu'avec leur
+accord.
+
+**Vidéos** : seulement des liens (`videos` dans la course), par exemple vers Medal. Aucun lecteur intégré
+ni fichier vidéo dans le dépôt : `npm run check` refuse les deux.
 
 ### Clips Medal
 

@@ -54,11 +54,18 @@ const aplat = index % 2 === 0 ? "univers-card__visuel--encre" : "univers-card__v
     overflow: hidden;
   }
 
-  /* Ordinateur : un tiers moins haut (4:3 → 2:1, même largeur) */
+  /* Tablette : une carte par ligne, en bandeau (3:1) pour rester compacte */
   @media (min-width: 48rem) {
     .univers-card__visuel {
-      aspect-ratio: 2 / 1;
+      aspect-ratio: 3 / 1;
       padding-block: 4cqi;
+    }
+  }
+
+  /* Ordinateur : cartes côte à côte, en 2:1 */
+  @media (min-width: 64rem) {
+    .univers-card__visuel {
+      aspect-ratio: 2 / 1;
     }
   }
 

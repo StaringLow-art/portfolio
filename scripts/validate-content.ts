@@ -41,6 +41,25 @@ try {
   report.fail(`jeux.ts invalide : ${error instanceof Error ? error.message : String(error)}`);
 }
 
+// 2c. Sport : calendrier (schéma appliqué à l'import),
+//     courses sans lecteur vidéo ni fichier vidéo dans le texte
+try {
+  const { calendrier } = await import("../src/data/sport.ts");
+  report.ok(`src/data/sport.ts respecte son schéma (${calendrier.length} date(s))`);
+} catch (error) {
+  report.fail(`sport.ts invalide : ${error instanceof Error ? error.message : String(error)}`);
+}
+const COURSES_DIR = path.join(ROOT, "src/content/sport/courses");
+const VIDEO_INTEGREE = /<iframe|<video|<embed|<object|\.(mp4|webm|mov|m4v|avi|mkv)\b/i;
+if (existsSync(COURSES_DIR)) {
+  for (const file of walk(COURSES_DIR).filter((f) => f.endsWith(".md"))) {
+    if (VIDEO_INTEGREE.test(readFileSync(path.join(COURSES_DIR, file), "utf8"))) {
+      report.fail(`sport/courses/${file} : lecteur ou fichier vidéo interdit (liens externes seulement, champ « videos »).`);
+    }
+  }
+  report.ok("courses vérifiées (aucune vidéo intégrée)");
+}
+
 // 3. Projets
 const PROJETS_DIR = path.join(ROOT, "src/content/projets");
 const FORBIDDEN = /<iframe|<video|<embed|<object|youtube\.com|youtu\.be|vimeo\.com|dailymotion|tiktok\.com|\.(mp4|webm|mov|m4v|avi|mkv)\b/i;

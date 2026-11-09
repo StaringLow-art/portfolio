@@ -20,7 +20,8 @@
     "generate:images": "node scripts/generate-images.ts",
     "prepare:photo": "node scripts/prepare-photo.ts",
     "clean:pdf": "node scripts/clean-pdf.ts",
-    "steam:fetch": "node scripts/fetch-steam.ts"
+    "steam:fetch": "node scripts/fetch-steam.ts",
+    "clean:image": "node scripts/clean-image.ts"
   },
   "dependencies": {
     "@astrojs/sitemap": "3.7.4",

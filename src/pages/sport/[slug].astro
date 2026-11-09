@@ -1,0 +1,196 @@
+---
+/**
+ * Page d'une course : /sport/<nom-du-fichier>/. Générée seulement pour les
+ * courses publiées (draft: false), et seulement si l'univers Sport est publié.
+ */
+import type { GetStaticPaths } from "astro";
+import { render } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Galerie from "../../components/Galerie.astro";
+import { site } from "../../config/site";
+import { getCoursesPubliees, type Course } from "../../lib/courses";
+import { motLePlusLongEm } from "../../lib/anton";
+import { dateEnLettres, dateIsoCourte } from "../../lib/sport";
+
+export const getStaticPaths = (async () => {
+  const courses = await getCoursesPubliees();
+  return courses.map((course) => ({ params: { slug: course.id }, props: { course } }));
+}) satisfies GetStaticPaths;
+
+interface Props {
+  course: Course;
+}
+
+const { course } = Astro.props;
+const { data } = course;
+const { Content } = await render(course);
+const date = dateEnLettres(data.date);
+---
+
+<BaseLayout title={data.titre} description={`${data.titre}, ${date}, ${data.circuit} : carnet de bord de karting de ${site.name}.`}>
+  <article class="course">
+    {
+      data.exemple && (
+        <p class="bandeau-exemple grain-slab on-slab" role="note">
+          <strong>EXEMPLE</strong> Contenu temporaire, visible uniquement en développement local. Jamais publié.
+        </p>
+      )
+    }
+    <header class="wrap course__head" style={`--mot-em: ${(motLePlusLongEm(data.titre) * 1.02).toFixed(3)}`}>
+      <p class="course__date"><time datetime={dateIsoCourte(data.date)}>{date}</time></p>
+      <h1 class="course__titre">{data.titre}</h1>
+    </header>
+
+    <div class="wrap course__corps">
+      <dl class="course__fiche">
+        <div>
+          <dt class="label">Circuit</dt>
+          <dd>{data.circuit}</dd>
+        </div>
+        <div>
+          <dt class="label">Catégorie</dt>
+          <dd>{data.categorie}</dd>
+        </div>
+        {
+          data.resultat && (
+            <div>
+              <dt class="label">Résultat</dt>
+              <dd class="course__resultat">{data.resultat}</dd>
+            </div>
+          )
+        }
+      </dl>
+
+      <div class="prose course__texte">
+        <Content />
+      </div>
+
+      {
+        data.photos.length > 0 && (
+          <section class="course__bloc" aria-labelledby="titre-photos">
+            <h2 class="course__bloc-titre" id="titre-photos">
+              Photos
+            </h2>
+            <Galerie photos={data.photos} />
+          </section>
+        )
+      }
+
+      {
+        data.videos.length > 0 && (
+          <section class="course__bloc" aria-labelledby="titre-videos">
+            <h2 class="course__bloc-titre" id="titre-videos">
+              Vidéos
+            </h2>
+            <ul class="course__videos" role="list">
+              {data.videos.map((v) => (
+                <li>
+                  <a class="link-arrow" href={v.url} rel="noopener">
+                    {v.titre}
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <p class="course__note">Liens vers des sites externes : rien n'est chargé depuis ces sites tant que vous ne cliquez pas.</p>
+          </section>
+        )
+      }
+
+      <nav class="course__nav" aria-label="Autres courses">
+        <a class="link-arrow" href="/sport/#courses">Toutes les courses</a>
+      </nav>
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  /* Bandeau des courses d'exemple (développement local uniquement) */
+  .bandeau-exemple {
+    margin: 0;
+    padding: 0.75rem var(--gutter);
+    font-weight: 600;
+  }
+
+  .bandeau-exemple strong {
+    margin-right: 0.75rem;
+    font-family: var(--font-display-stack);
+    font-size: 1.5rem;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+  }
+
+  /* En-tête : date au-dessus du titre ; le mot le plus long tient toujours
+     sur une ligne (largeur en Anton calculée : --mot-em). */
+  .course__head {
+    container-type: inline-size;
+    padding-top: clamp(2.5rem, 6vw, 5rem);
+  }
+
+  .course__date {
+    margin: 0 0 0.75rem;
+    font-family: var(--font-display-stack);
+    font-size: clamp(1.4rem, 1rem + 1.5vw, 2.2rem);
+    line-height: 1;
+    color: var(--c-mark);
+    text-transform: uppercase;
+  }
+
+  .course__titre {
+    max-width: 12em;
+    font-size: min(clamp(2rem, 0.6rem + 7vw, 7rem), calc(100cqi / var(--mot-em)));
+    line-height: var(--lh-title);
+  }
+
+  .course__corps {
+    padding-block: clamp(2rem, 5vw, 3.5rem) clamp(4rem, 9vw, 8rem);
+  }
+
+  .course__fiche {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 3rem;
+    margin: 0 0 clamp(2rem, 5vw, 3rem);
+    padding-block: 1rem;
+    border-block: 1px solid var(--c-fg);
+  }
+
+  .course__fiche dd {
+    margin: 0.35rem 0 0;
+    font-weight: 600;
+  }
+
+  .course__resultat {
+    color: var(--c-mark);
+  }
+
+  .course__bloc {
+    margin-top: clamp(3rem, 7vw, 5rem);
+  }
+
+  .course__bloc-titre {
+    margin-bottom: 1.25rem;
+    padding-top: 1rem;
+    border-top: var(--rule);
+    font-size: clamp(1.8rem, 1.3rem + 2vw, 2.75rem);
+  }
+
+  .course__videos {
+    display: grid;
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .course__note {
+    max-width: 70ch;
+    margin: 1.5rem 0 0;
+    font-size: 0.875rem;
+  }
+
+  .course__nav {
+    margin-top: clamp(3rem, 7vw, 5rem);
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--c-fg);
+  }
+</style>

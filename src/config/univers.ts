@@ -1,8 +1,10 @@
 /**
  * Univers du site, dans l'ordre du menu et de l'accueil.
- * Pour ajouter Sport, Musique ou Loisirs plus tard : créer la page
+ * Pour ajouter Musique ou Loisirs plus tard : créer la page
  * src/pages/<slug>.astro, puis ajouter une entrée ici.
  */
+import { sportPublie } from "../lib/sport";
+
 export type Univers = {
   /** Adresse de la page : /<slug>/ */
   slug: string;
@@ -14,6 +16,8 @@ export type Univers = {
   resume: string;
   /** Adresses rattachées à cet univers dans le menu (ex. pages de projets). */
   sousPages?: string[];
+  /** false = univers masqué (ni menu, ni carte, ni page). Défaut : visible. */
+  visible?: boolean;
 };
 
 export const univers: Univers[] = [
@@ -21,7 +25,8 @@ export const univers: Univers[] = [
     slug: "pro",
     titre: "Professionnel",
     menu: "Pro",
-    resume: "Informaticien CFC en exploitation et infrastructure : projets, parcours et CV.",
+    // Espace insécable avant « : » : jamais de deux-points en début de ligne
+    resume: "Informaticien CFC en exploitation et infrastructure : projets, parcours et CV.",
     sousPages: ["/projets/"],
   },
   {
@@ -29,4 +34,14 @@ export const univers: Univers[] = [
     titre: "Jeux",
     resume: "Mes jeux favoris, ma bibliothèque Steam et mes clips.",
   },
+  {
+    slug: "sport",
+    titre: "Sport",
+    resume: "Le karting, mes courses et mon calendrier.",
+    // Publié seulement quand src/content/sport/introduction.md est rempli
+    visible: sportPublie(),
+  },
 ];
+
+/** Univers publiés, dans l'ordre : menu, cartes de l'accueil. */
+export const universPublies = univers.filter((u) => u.visible !== false);

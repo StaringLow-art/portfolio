@@ -1,9 +1,10 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { SITE_ORIGIN, watchPage } from "./helpers";
+import { PAGES, SITE_ORIGIN, watchPage } from "./helpers";
 
 const SITE = "https://portfolio.cardamone-online.ch";
-const PUBLIC_PAGES = ["/", "/pro/", "/jeux/", "/projets/homelab/", "/projets/projet-cfc/", "/contact/"];
+/** Pages publiques (Sport et ses courses inclus dès qu'ils sont publiés). */
+const PUBLIC_PAGES = PAGES;
 const NOT_FOUND = "/cette-page-n-existe-pas/";
 const ALL_PAGES = [...PUBLIC_PAGES, NOT_FOUND];
 

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { PAGES_COURSES } from "./helpers";
 
 const WIDTHS = [320, 375, 768, 1024, 1440, 1920, 2560];
 const heightFor = (w: number) => (w < 768 ? 812 : w >= 2560 ? 1440 : 900);
@@ -141,13 +142,13 @@ for (const width of WIDTHS) {
     });
 
     test("mosaïque : repères de coupe autour de chaque image, sans débordement", async ({ page }) => {
-      for (const url of ["/pro/", "/", "/jeux/"]) {
+      for (const url of ["/pro/", "/", "/jeux/", ...PAGES_COURSES]) {
         await page.goto(url);
         const r = await page.evaluate(() => {
           const vw = document.documentElement.clientWidth;
           return {
             overflow: document.documentElement.scrollWidth - vw,
-            frames: [...document.querySelectorAll(".card__frame, .univers-card__frame, .jeu__frame")].map((f) => {
+            frames: [...document.querySelectorAll(".card__frame, .univers-card__frame, .jeu__frame, .galerie__cadre")].map((f) => {
               const rect = f.getBoundingClientRect();
               return ["::before", "::after"].map((p) => {
                 const cs = getComputedStyle(f, p);

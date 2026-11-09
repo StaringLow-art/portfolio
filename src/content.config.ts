@@ -53,4 +53,49 @@ const projets = defineCollection({
     }),
 });
 
-export const collections = { projets };
+/** Sport : textes libres (src/content/sport/introduction.md). */
+const sportTextes = defineCollection({
+  loader: glob({ base: "./src/content/sport", pattern: "*.md" }),
+  schema: z.object({}),
+});
+
+/** Sport : une course par fichier Markdown dans src/content/sport/courses/. */
+const courses = defineCollection({
+  loader: glob({ base: "./src/content/sport/courses", pattern: "*.md" }),
+  schema: ({ image }) =>
+    z.strictObject({
+      titre: texte,
+      /** AAAA-MM-JJ (sans guillemets, YAML la lit comme une date). */
+      date: z.coerce.date(),
+      circuit: texte,
+      categorie: texte,
+      /** Facultatif : vide = non affiché. */
+      resultat: z.string().trim().default(""),
+      /** Photos nettoyées (npm run clean:image), texte alternatif obligatoire. */
+      photos: z
+        .array(
+          z.strictObject({
+            src: image(),
+            alt: texte,
+            legende: z.string().trim().default(""),
+          }),
+        )
+        .default([]),
+      /** Liens externes uniquement (aucun lecteur ni fichier vidéo). */
+      videos: z
+        .array(
+          z.strictObject({
+            titre: texte,
+            url: z.string().regex(/^https:\/\/\S+$/, "Lien attendu en https://"),
+          }),
+        )
+        .default([]),
+      /** true = course masquée partout. */
+      draft: z.boolean(),
+      /** true = course d'exemple : visible seulement en développement local
+       *  (npm run dev), avec un bandeau « EXEMPLE ». Jamais dans le site publié. */
+      exemple: z.boolean().default(false),
+    }),
+});
+
+export const collections = { projets, sportTextes, courses };

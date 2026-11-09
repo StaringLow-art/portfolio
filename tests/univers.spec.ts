@@ -1,7 +1,10 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
-import { ANCIENNES_ADRESSES, SITE_ORIGIN, watchPage } from "./helpers";
+import { ANCIENNES_ADRESSES, CARTES_UNIVERS, MENU, SITE_ORIGIN, SPORT_PUBLIE, watchPage } from "./helpers";
+
+/** Adresses des cartes Univers, dans l'ordre. */
+const LIENS_UNIVERS = ["/pro/", "/jeux/", ...(SPORT_PUBLIE ? ["/sport/"] : [])];
 
 const NAV = { name: "Navigation principale" } as const;
 const FAVORIS = [
@@ -24,11 +27,12 @@ test.describe("menu", () => {
       ["/jeux/", "Jeux", "page"],
       ["/contact/", "Contact", "page"],
       ["/projets/homelab/", "Pro", "true"], // une page de projet appartient à Pro
+      ...(SPORT_PUBLIE ? ([["/sport/", "Sport", "page"]] as const) : []),
     ] as const;
     for (const [url, actif, valeur] of attendu) {
       await page.goto(url);
       const nav = page.getByRole("navigation", NAV);
-      await expect(nav.getByRole("link")).toHaveText(["Accueil", "Pro", "Jeux", "Contact"]);
+      await expect(nav.getByRole("link")).toHaveText(MENU);
       await expect(nav.locator("a[aria-current]"), url).toHaveCount(1);
       await expect(nav.getByRole("link", { name: actif }), url).toHaveAttribute("aria-current", valeur);
     }
@@ -92,23 +96,22 @@ test.describe("accueil", () => {
     await expect(main.locator('a[href$=".pdf"]')).toHaveCount(0);
     await expect(main.locator(".card")).toHaveCount(0);
 
-    // Deux univers, mêmes dimensions
+    // Univers publiés, mêmes dimensions
     const cartes = page.locator(".univers-card");
-    await expect(cartes).toHaveCount(2);
-    await expect(page.locator(".univers-card__title a")).toHaveText(["Professionnel", "Jeux"]);
-    await expect(page.locator(".univers-card__title a").first()).toHaveAttribute("href", "/pro/");
-    await expect(page.locator(".univers-card__title a").last()).toHaveAttribute("href", "/jeux/");
+    await expect(cartes).toHaveCount(CARTES_UNIVERS.length);
+    await expect(page.locator(".univers-card__title a")).toHaveText(CARTES_UNIVERS);
+    for (const [i, href] of LIENS_UNIVERS.entries()) await expect(page.locator(".univers-card__title a").nth(i)).toHaveAttribute("href", href);
     for (const width of [375, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       const tailles = await page.locator(".univers-card__visuel").evaluateAll((els) =>
         els.map((el) => [Math.round(el.getBoundingClientRect().width), Math.round(el.getBoundingClientRect().height)]),
       );
-      expect(tailles[0], `${width} px : univers à égalité`).toEqual(tailles[1]);
+      for (const t of tailles) expect(t, `${width} px : univers à égalité`).toEqual(tailles[0]);
     }
   });
 
   for (const scheme of ["light", "dark"] as const)
-  for (const width of [320, 360, 375, 414, 768, 1024, 1280, 1440, 1920, 2560]) {
+  for (const width of [320, 360, 375, 414, 768, 900, 1023, 1024, 1280, 1440, 1920, 2560]) {
     test(`${width} px, thème ${scheme} : aucun débordement (« 02 UNIVERS », cartes Professionnel et Jeux)`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: scheme });
       await page.setViewportSize({ width, height: 900 });
@@ -135,9 +138,14 @@ test.describe("accueil", () => {
         expect(c.mot.right, `mot de la carte ${i + 1} entier`).toBeLessThanOrEqual(c.visuel.right);
         expect(c.coupe, `carte ${i + 1} : contenu coupé`).toBe(false);
       }
-      // Ordinateur : cartes un tiers moins hautes (2:1) ; téléphone : 4:3
+      // Proportions : téléphone 4:3, tablette 3:1 (bandeau), ordinateur 2:1
       const ratio = m.cartes[0]!.visuel.height / m.cartes[0]!.visuel.width;
-      expect(Math.abs(ratio - (width >= 768 ? 0.5 : 0.75))).toBeLessThan(0.02);
+      expect(Math.abs(ratio - (width >= 1024 ? 0.5 : width >= 768 ? 1 / 3 : 0.75))).toBeLessThan(0.02);
+      // Disposition : toutes les cartes sur une ligne dès 1024 px, une par ligne avant
+      const lignes = new Set(m.cartes.map((c) => Math.round(c.visuel.top))).size;
+      expect(lignes, "nombre de lignes de cartes").toBe(width >= 1024 ? 1 : m.cartes.length);
+      // Même largeur pour toutes les cartes (donc titres de même taille)
+      for (const c of m.cartes) expect(Math.abs(c.visuel.width - m.cartes[0]!.visuel.width)).toBeLessThanOrEqual(1);
     });
   }
 
@@ -152,13 +160,13 @@ test.describe("accueil", () => {
     // Aucun numéro dans les cartes ; le compteur « 02 UNIVERS » reste
     await expect(page.locator(".univers-card__num")).toHaveCount(0);
     for (const n of ["01", "02"]) await expect(page.locator(".univers-card").getByText(n, { exact: true })).toHaveCount(0);
-    await expect(page.locator(".univers-card__visuel .univers-card__title")).toHaveText(["Professionnel", "Jeux"]);
-    await expect(page.locator(".home-univers .section-count")).toHaveText(/02\s*univers/i);
+    await expect(page.locator(".univers-card__visuel .univers-card__title")).toHaveText(CARTES_UNIVERS);
+    await expect(page.locator(".home-univers .section-count")).toHaveText(new RegExp(`0${CARTES_UNIVERS.length}\\s*univers`, "i"));
     // Sous la carte : seulement la description (ni numéro, ni titre répétés)
     const dessous = await page.locator(".univers-card").evaluateAll((cartes) =>
       cartes.map((c) => [...c.children].filter((e) => !e.classList.contains("univers-card__frame")).map((e) => e.className.split(" ")[0])),
     );
-    expect(dessous).toEqual([["univers-card__resume"], ["univers-card__resume"]]);
+    expect(dessous).toEqual(CARTES_UNIVERS.map(() => ["univers-card__resume"]));
     // Le filet sous la description fait toute la largeur de la carte
     const filets = await page.locator(".univers-card").evaluateAll((cartes) =>
       cartes.map((c) => {
@@ -167,8 +175,8 @@ test.describe("accueil", () => {
         return Math.abs(carte.width - filet.width) < 1 && Math.abs(carte.left - filet.left) < 1;
       }),
     );
-    expect(filets).toEqual([true, true]);
-    for (const titre of ["Professionnel", "Jeux"]) await expect(page.locator(".home-univers").getByText(titre, { exact: true })).toHaveCount(1);
+    expect(filets).toEqual(CARTES_UNIVERS.map(() => true));
+    for (const titre of CARTES_UNIVERS) await expect(page.locator(".home-univers").getByText(titre, { exact: true })).toHaveCount(1);
     // Titre en bas à gauche, exactement dans la marge intérieure ; même taille
     // pour les deux, la plus grande possible pour que « PROFESSIONNEL » tienne
     for (const width of [320, 375, 768, 1440, 2560]) {
@@ -192,7 +200,8 @@ test.describe("accueil", () => {
         expect(c.gauche, `${width} px : titre sur la marge gauche`).toBeLessThanOrEqual(1);
         expect(c.bas, `${width} px : titre sur la marge du bas`).toBeLessThanOrEqual(1);
       }
-      expect(g[0]!.taille, `${width} px : même taille de titre`).toBe(g[1]!.taille);
+      // Même taille (à 0,05 px près : arrondi des sous-pixels de la grille en 3 colonnes)
+      for (const c of g) expect(Math.abs(c.taille - g[0]!.taille), `${width} px : même taille de titre`).toBeLessThanOrEqual(0.05);
       expect(g[0]!.remplissage, `${width} px : « PROFESSIONNEL » tient`).toBeLessThanOrEqual(1);
       expect(g[0]!.remplissage, `${width} px : taille la plus grande possible`).toBeGreaterThan(0.95);
     }
@@ -212,10 +221,7 @@ test.describe("accueil", () => {
         }),
       );
     }
-    expect(cibles).toEqual([
-      ["/pro/", "/pro/"],
-      ["/jeux/", "/jeux/"],
-    ]);
+    expect(cibles).toEqual(LIENS_UNIVERS.map((href) => [href, href]));
   });
 
   for (const scheme of ["light", "dark"] as const) {

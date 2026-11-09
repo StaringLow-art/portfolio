@@ -135,7 +135,8 @@ async function checkImage(label: string, absolute: string): Promise<void> {
   //    purement techniques sont tolérées.
   let tags: Record<string, unknown> | undefined;
   try {
-    tags = await exifr.parse(absolute, { tiff: true, exif: true, gps: true, iptc: true, xmp: true, icc: false, jfif: false, ihdr: false });
+    // Lecture du contenu (et non du chemin) : fonctionne avec toutes les versions de Node
+    tags = await exifr.parse(readFileSync(absolute), { tiff: true, exif: true, gps: true, iptc: true, xmp: true, icc: false, jfif: false, ihdr: false });
   } catch {
     tags = undefined;
   }

@@ -3,7 +3,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import Hero from "../components/Hero.astro";
 import UniversCard from "../components/UniversCard.astro";
 import { site } from "../config/site";
-import { univers } from "../config/univers";
+import { universPublies as univers } from "../config/univers";
 import { largeurEm } from "../lib/anton";
 
 /** Titre d'univers le plus long (em, +2 % de marge) : taille commune des cartes. */
@@ -65,15 +65,18 @@ const person = {
     border-top: var(--rule);
   }
 
-  /* Univers à égalité : même largeur, même proportion */
+  /* Univers à égalité : même largeur, même proportion, donc titres de même
+     taille. Téléphone et tablette : une carte par ligne (proportions dans
+     UniversCard). Ordinateur : toutes les cartes sur une seule ligne. */
   .univers {
     display: grid;
     gap: clamp(3rem, 7vw, 6rem) clamp(1rem, 3vw, 2.5rem);
   }
 
-  @media (min-width: 48rem) {
+  @media (min-width: 64rem) {
     .univers {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(0, 1fr);
     }
   }
 

@@ -1,0 +1,210 @@
+---
+/**
+ * Page /sport/ : carnet de bord de karting. Générée seulement quand l'univers
+ * Sport est publié (introduction remplie) ; sinon, aucune page n'existe.
+ */
+import type { GetStaticPaths } from "astro";
+import { getEntry, render } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { site } from "../../config/site";
+import { calendrier } from "../../data/sport";
+import { getCoursesPubliees } from "../../lib/courses";
+import { dateEnLettres, dateIsoCourte, prochainesCourses, sportPublie } from "../../lib/sport";
+
+export const getStaticPaths = (() => (sportPublie() ? [{ params: { index: undefined } }] : [])) satisfies GetStaticPaths;
+
+const introduction = await getEntry("sportTextes", "introduction");
+const { Content: Introduction } = await render(introduction!);
+const courses = await getCoursesPubliees();
+const aVenir = prochainesCourses(calendrier);
+const total = String(courses.length).padStart(2, "0");
+---
+
+<BaseLayout title="Sport" description={`Le carnet de bord de karting de ${site.name} : pourquoi il pilote, ses courses et son calendrier.`}>
+  <div class="wrap page sport">
+    <header class="section-head">
+      <h1 class="section-title">Sport</h1>
+      <p class="section-count">
+        <span class="section-count__n">{total}</span>
+        <span class="label">{courses.length > 1 ? "courses" : "course"}</span>
+      </p>
+    </header>
+    <p class="label sport__kicker">Karting · carnet de bord</p>
+
+    <section class="sport__pourquoi" aria-labelledby="titre-pourquoi">
+      <h2 class="sport__titre" id="titre-pourquoi">Pourquoi le karting</h2>
+      <div class="prose">
+        <Introduction />
+      </div>
+    </section>
+
+    <section class="sport__bloc" id="calendrier" aria-labelledby="titre-calendrier">
+      <h2 class="sport__titre" id="titre-calendrier">Prochaines courses</h2>
+      {
+        aVenir.length > 0 ? (
+          <ol class="calendrier" role="list">
+            {aVenir.map((c) => (
+              <li class="calendrier__item">
+                <time class="calendrier__date" datetime={c.date}>
+                  {dateEnLettres(c.date)}
+                </time>
+                <div>
+                  <p class="calendrier__evenement">{c.evenement}</p>
+                  <p class="calendrier__circuit">{c.circuit}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p class="sport__vide">Aucune course prévue pour le moment</p>
+        )
+      }
+    </section>
+
+    <section class="sport__bloc" id="courses" aria-labelledby="titre-courses">
+      <h2 class="sport__titre" id="titre-courses">Courses</h2>
+      {
+        courses.length > 0 ? (
+          <ol class="carnet" role="list">
+            {courses.map((course) => (
+              <li class="carnet__item">
+                <time class="carnet__date" datetime={dateIsoCourte(course.data.date)}>
+                  {dateEnLettres(course.data.date)}
+                </time>
+                <div class="carnet__texte">
+                  {course.data.exemple && <p class="carnet__exemple">EXEMPLE · visible uniquement en développement local</p>}
+                  <h3 class="carnet__titre">
+                    <a href={`/sport/${course.id}/`}>{course.data.titre}</a>
+                  </h3>
+                  <p class="carnet__meta">
+                    <span>{course.data.circuit}</span>
+                    <span>{course.data.categorie}</span>
+                    {course.data.resultat && <span class="carnet__resultat">{course.data.resultat}</span>}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p class="sport__vide">Aucune course publiée pour le moment</p>
+        )
+      }
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .sport__kicker {
+    margin: calc(-1 * clamp(1rem, 3vw, 2.5rem)) 0 clamp(2rem, 5vw, 3.5rem);
+  }
+
+  .sport__titre {
+    margin-bottom: 1.25rem;
+    padding-top: 1rem;
+    border-top: var(--rule);
+    font-size: clamp(1.8rem, 1.3rem + 2vw, 2.75rem);
+    line-height: var(--lh-title);
+  }
+
+  /* ============ Pourquoi le karting : largeur de lecture ============ */
+  .sport__pourquoi {
+    max-width: 48rem;
+  }
+
+  .sport__bloc {
+    margin-top: clamp(4rem, 9vw, 7rem);
+  }
+
+  .sport__vide {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  /* ============ Calendrier et carnet : date en marge, comme le parcours ============ */
+  .calendrier,
+  .carnet {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .calendrier__item,
+  .carnet__item {
+    display: grid;
+    gap: 0.5rem 2rem;
+    padding-block: clamp(1rem, 2.5vw, 1.5rem);
+    border-bottom: 1px solid var(--c-fg);
+  }
+
+  @media (min-width: 48rem) {
+    .calendrier__item,
+    .carnet__item {
+      grid-template-columns: minmax(10rem, 3fr) 9fr;
+      align-items: first baseline;
+    }
+  }
+
+  .calendrier__date,
+  .carnet__date {
+    font-family: var(--font-display-stack);
+    font-size: clamp(1.4rem, 1rem + 1.5vw, 2.2rem);
+    line-height: var(--lh-title);
+    color: var(--c-mark);
+    text-transform: uppercase;
+  }
+
+  .calendrier__evenement {
+    margin: 0;
+    font-weight: 600;
+    font-size: clamp(1.1rem, 1rem + 0.4vw, 1.3rem);
+  }
+
+  .calendrier__circuit {
+    margin: 0.25rem 0 0;
+  }
+
+  /* Étiquette des courses d'exemple (développement local uniquement) */
+  .carnet__exemple {
+    display: inline-block;
+    margin: 0 0 0.5rem;
+    padding: 0.2rem 0.6rem;
+    background: var(--c-slab);
+    color: var(--c-on-slab);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+  }
+
+  .carnet__titre {
+    font-size: clamp(1.6rem, 1.1rem + 1.8vw, 2.6rem);
+    line-height: var(--lh-title);
+  }
+
+  .carnet__titre a {
+    text-decoration: none;
+  }
+
+  .carnet__titre a:hover {
+    color: var(--c-mark);
+    text-decoration: underline;
+    text-decoration-thickness: 0.06em;
+    text-underline-offset: 0.12em;
+  }
+
+  /* Circuit, catégorie, résultat : séparés par un filet, jamais par « / » */
+  .carnet__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+    margin: 0.5rem 0 0;
+  }
+
+  .carnet__meta span + span {
+    padding-left: 1rem;
+    border-left: 1px solid var(--c-fg);
+  }
+
+  .carnet__resultat {
+    font-weight: 600;
+  }
+</style>

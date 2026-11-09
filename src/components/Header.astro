@@ -1,13 +1,13 @@
 ---
 import Logo from "./Logo.astro";
 import ThemeToggle from "./ThemeToggle.astro";
-import { univers } from "../config/univers";
+import { universPublies } from "../config/univers";
 
 const path = Astro.url.pathname;
 /** Menu : Accueil, chaque univers (config/univers.ts), puis Contact. */
 const items = [
   { href: "/", label: "Accueil", sousPages: [] as string[] },
-  ...univers.map((u) => ({ href: `/${u.slug}/`, label: u.menu ?? u.titre, sousPages: u.sousPages ?? [] })),
+  ...universPublies.map((u) => ({ href: `/${u.slug}/`, label: u.menu ?? u.titre, sousPages: u.sousPages ?? [] })),
   { href: "/contact/", label: "Contact", sousPages: [] as string[] },
 ];
 

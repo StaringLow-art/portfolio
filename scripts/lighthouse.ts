@@ -18,7 +18,7 @@ import { DIST, ROOT } from "./lib.ts";
 const PORT = 4321;
 const DEBUG_PORT = 9333;
 const RUNS = 3;
-const PAGES = ["/", "/pro/", "/jeux/", "/projets/homelab/", "/projets/projet-cfc/"];
+const PAGES = ["/", "/pro/", "/jeux/", "/sport/", "/projets/homelab/", "/projets/projet-cfc/"];
 const TARGETS: Record<string, number> = {
   performance: 90,
   accessibility: 95,
