@@ -235,32 +235,92 @@ test.describe("accueil", () => {
     });
   }
 
-  test("bannière « Site en cours de développement » : sur l'accueil seulement, visible, sans débordement", async ({ page }) => {
+  test("bannière « Site en cours de développement » : sous le menu, texte répété et espacé, lu une seule fois", async ({ page }) => {
     for (const width of [320, 375, 1440, 2560]) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/");
       const banniere = page.locator(".chantier");
       await expect(banniere).toBeVisible();
-      await expect(banniere).toHaveText("Site en cours de développement");
-      // Juste sous le menu, sur toute la largeur, texte aligné sur la marge du logo
+      // Lecteurs d'écran : une seule fois (les répétitions sont décoratives)
+      await expect(banniere.getByText("Site en cours de développement", { exact: true }).first()).toHaveClass(/visually-hidden/);
+      await expect(page.locator(".chantier__piste")).toHaveAttribute("aria-hidden", "true");
       const g = await page.evaluate(() => {
         const b = document.querySelector(".chantier")!.getBoundingClientRect();
         const menu = document.querySelector(".site-header")!.getBoundingClientRect();
-        const range = document.createRange();
-        range.selectNodeContents(document.querySelector(".chantier__texte")!);
-        const texte = range.getClientRects()[0]!;
-        const logo = document.querySelector(".logo")!.getBoundingClientRect();
-        return { haut: b.top, basMenu: menu.bottom, largeur: b.width, vw: document.documentElement.clientWidth, texte: texte.left, logo: logo.left, scroll: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+        const textes = [...document.querySelectorAll(".chantier__texte")];
+        // Espace réel entre la fin d'un texte et le début du suivant
+        const ecarts = textes.slice(0, -1).map((t, i) => {
+          const r1 = document.createRange();
+          r1.selectNodeContents(t);
+          const r2 = document.createRange();
+          r2.selectNodeContents(textes[i + 1]!);
+          return r2.getClientRects()[0]!.left - r1.getClientRects()[0]!.right;
+        });
+        return {
+          haut: b.top,
+          basMenu: menu.bottom,
+          largeur: b.width,
+          vw: document.documentElement.clientWidth,
+          repetitions: textes.length,
+          ecartMin: Math.min(...ecarts),
+          tousIdentiques: textes.every((t) => t.textContent === "Site en cours de développement"),
+          // Assez de texte pour couvrir le bandeau en permanence (boucle sans trou)
+          groupe: document.querySelector(".chantier__groupe")!.getBoundingClientRect().width,
+          scroll: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        };
       });
       expect(Math.abs(g.haut - g.basMenu), `${width} px : sous le menu`).toBeLessThanOrEqual(1);
       expect(g.largeur, `${width} px : pleine largeur`).toBe(g.vw);
-      expect(Math.abs(g.texte - g.logo), `${width} px : aligné sur le logo`).toBeLessThanOrEqual(4);
-      expect(g.scroll).toBe(0);
+      expect(g.repetitions, "texte écrit plusieurs fois").toBeGreaterThanOrEqual(8);
+      expect(g.tousIdentiques).toBe(true);
+      expect(g.ecartMin, `${width} px : large espace entre les répétitions`).toBeGreaterThanOrEqual(48);
+      expect(g.groupe, `${width} px : bandeau toujours rempli`).toBeGreaterThanOrEqual(g.vw);
+      expect(g.scroll, `${width} px : aucun défilement horizontal de la page`).toBe(0);
     }
     for (const url of ["/pro/", "/jeux/", "/contact/"]) {
       await page.goto(url);
       await expect(page.locator(".chantier"), url).toHaveCount(0);
     }
+  });
+
+  test("bannière : défile de gauche à droite, bouton Pause / Lecture", async ({ page }) => {
+    await page.goto("/");
+    const position = () => page.locator(".chantier__piste").evaluate((p) => new DOMMatrix(getComputedStyle(p).transform).m41);
+    const avant = await position();
+    await page.waitForTimeout(600);
+    const apres = await position();
+    expect(apres, "le texte avance vers la droite").toBeGreaterThan(avant);
+
+    const bouton = page.getByRole("button", { name: "Pause" });
+    await expect(bouton).toBeVisible();
+    await bouton.click();
+    await expect(page.getByRole("button", { name: "Lecture" })).toBeVisible();
+    const p1 = await position();
+    await page.waitForTimeout(600);
+    expect(await position(), "arrêté après Pause").toBe(p1);
+    await page.getByRole("button", { name: "Lecture" }).click();
+    await expect(page.getByRole("button", { name: "Pause" })).toBeVisible();
+    const p2 = await position();
+    await page.waitForTimeout(600);
+    expect(await position(), "repart après Lecture").toBeGreaterThan(p2);
+  });
+
+  test.describe("bannière avec mouvement réduit", () => {
+    test.use({ reducedMotion: "reduce" });
+    test("texte immobile, pas de bouton Pause", async ({ page }) => {
+      await page.goto("/");
+      await expect(page.locator(".chantier__piste")).toHaveCSS("animation-name", "none");
+      await expect(page.locator("[data-chantier-pause]")).toBeHidden();
+    });
+  });
+
+  test.describe("bannière sans JavaScript", () => {
+    test.use({ javaScriptEnabled: false });
+    test("le texte reste lisible ; le bouton Pause (JavaScript) n'apparaît pas", async ({ page }) => {
+      await page.goto("/");
+      await expect(page.locator(".chantier")).toBeVisible();
+      await expect(page.locator("[data-chantier-pause]")).toBeHidden();
+    });
   });
 
   test("titre et description présentent toute la personnalité", async ({ page }) => {

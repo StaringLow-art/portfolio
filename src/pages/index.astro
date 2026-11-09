@@ -28,10 +28,24 @@ const person = {
   description={`Bienvenue dans l'univers de ${site.name} : ${site.presentation.toLowerCase()}. Parcours professionnel, jeux favoris et contact.`}
 >
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(person)} />
-  <!-- Bannière temporaire : à retirer quand le site sera terminé -->
-  <p class="chantier on-slab grain-slab" role="note">
-    <span class="wrap chantier__texte">Site en cours de développement</span>
-  </p>
+  <!-- Bannière temporaire : à retirer quand le site sera terminé.
+       Le texte défile de gauche à droite ; il n'est lu qu'une fois par les
+       lecteurs d'écran (les répétitions sont décoratives). -->
+  <div class="chantier on-slab grain-slab" role="note" data-chantier>
+    <span class="visually-hidden">Site en cours de développement</span>
+    <div class="chantier__piste" aria-hidden="true">
+      {
+        [0, 1].map(() => (
+          <span class="chantier__groupe">
+            {Array.from({ length: 8 }, () => (
+              <span class="chantier__texte">Site en cours de développement</span>
+            ))}
+          </span>
+        ))
+      }
+    </div>
+    <button type="button" class="chantier__pause" data-chantier-pause hidden>Pause</button>
+  </div>
   <Hero />
 
   <section class="home-univers" aria-labelledby="titre-univers">
@@ -63,20 +77,98 @@ const person = {
   </section>
 </BaseLayout>
 
+<script>
+  // Bouton Pause/Lecture de la bannière (le défilement en continu doit pouvoir être arrêté)
+  const banniere = document.querySelector<HTMLElement>("[data-chantier]");
+  const bouton = banniere?.querySelector<HTMLButtonElement>("[data-chantier-pause]");
+  if (banniere && bouton) {
+    bouton.hidden = false;
+    bouton.addEventListener("click", () => {
+      const pause = banniere.classList.toggle("chantier--pause");
+      bouton.textContent = pause ? "Lecture" : "Pause";
+    });
+  }
+</script>
+
 <style>
-  /* Bannière « Site en cours de développement » : bandeau bordeaux sous le menu */
+  /* Bannière « Site en cours de développement » : bandeau bordeaux sous le menu,
+     texte répété qui défile de gauche à droite. */
   .chantier {
-    margin: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    /* Le texte qui sort du bandeau est masqué (aucun défilement de la page) */
+    overflow: hidden;
     padding-block: 0.6rem;
   }
 
+  .chantier__piste {
+    display: flex;
+    flex-shrink: 0;
+    width: max-content;
+    /* Deux groupes identiques : décaler d'un groupe (-50 %) boucle sans à-coup */
+    animation: chantier-defile 45s linear infinite;
+  }
+
+  .chantier--pause .chantier__piste {
+    animation-play-state: paused;
+  }
+
+  @keyframes chantier-defile {
+    from {
+      transform: translateX(-50%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  .chantier__groupe {
+    display: flex;
+    flex-shrink: 0;
+  }
+
+  /* Large espace entre deux occurrences du texte */
   .chantier__texte {
-    display: block;
+    flex-shrink: 0;
+    padding-right: clamp(4rem, 10vw, 8rem);
     font-size: 0.8125rem;
     font-weight: 600;
     letter-spacing: 0.14em;
     line-height: 1.4;
     text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  /* Bouton Pause, collé au bord droit sur toute la hauteur du bandeau, fond
+     plein : le texte disparaît derrière lui (visible seulement avec JavaScript) */
+  .chantier__pause {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    padding: 0 var(--gutter);
+    border: 0;
+    border-left: 1px solid var(--c-on-slab);
+    background: var(--c-slab);
+    color: var(--c-on-slab);
+    font: inherit;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  /* Mouvement réduit demandé : texte immobile, pas de bouton inutile */
+  @media (prefers-reduced-motion: reduce) {
+    .chantier__piste {
+      animation: none;
+    }
+
+    .chantier__pause {
+      display: none;
+    }
   }
 
   .home-univers {

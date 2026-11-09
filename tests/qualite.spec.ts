@@ -235,11 +235,11 @@ for (const width of [320, 375, 768, 1024, 1440, 1920]) {
           const r = el.getBoundingClientRect();
           if (r.width === 0 || r.height === 0) continue;
           const cs = getComputedStyle(el);
-          if (cs.visibility === "hidden" || cs.clip === "rect(0px, 0px, 0px, 0px)" || el.closest(".visually-hidden, .skip-link, [hidden]")) continue;
+          if (cs.visibility === "hidden" || cs.clip === "rect(0px, 0px, 0px, 0px)" || el.closest(".visually-hidden, .skip-link, [hidden], .chantier__piste")) continue;
           const name = `${el.tagName.toLowerCase()}.${[...el.classList].filter((c) => !c.startsWith("astro")).join(".")}`;
           if (r.right > vw + 0.5 || r.left < -0.5) out.push(`${name} hors de l'écran (${Math.round(r.left)} → ${Math.round(r.right)})`);
           // Contenu coupé par un conteneur qui masque son débordement
-          if ((cs.overflowX === "hidden" || cs.overflowX === "clip") && el.scrollWidth > el.clientWidth + 1 && !el.classList.contains("reveal")) {
+          if ((cs.overflowX === "hidden" || cs.overflowX === "clip") && el.scrollWidth > el.clientWidth + 1 && !el.classList.contains("reveal") && !el.classList.contains("chantier")) {
             out.push(`${name} coupe son contenu (${el.scrollWidth} > ${el.clientWidth})`);
           }
         }
